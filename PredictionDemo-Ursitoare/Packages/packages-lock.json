@@ -94,6 +94,13 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.2",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.render-pipelines.core": {
       "version": "17.3.0",
       "depth": 1,
@@ -192,6 +199,22 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "sector0.safe-event-dispatcher": {
+      "version": "https://github.com/iFlex/SafeEventDispatcher.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "1502014bad8eb1391dd15a2ea7e59ff36a506b10"
+    },
+    "sector0.ursitoare": {
+      "version": "https://github.com/iFlex/Ursitoare.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "sector0.safe-event-dispatcher": "1.0.0"
+      },
+      "hash": "e7f6ee2bdb9ab64200e291dcd9b72c5c4b537ba6"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
