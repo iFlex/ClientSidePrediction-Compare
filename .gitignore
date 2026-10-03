@@ -110,3 +110,19 @@ InitTestScene*.unity*
 /PredictionDemo-Ursitoare/Temp
 /PredictionDemo-Ursitoare/Assets/Mirror
 /PredictionDemo-Ursitoare/build
+/PredictionDemo-FishNet/.idea
+/PredictionDemo-FishNet/Assets/FishNet
+/PredictionDemo-FishNet/Assets/Scalable Grid Prototype Materials
+/PredictionDemo-FishNet/build
+/PredictionDemo-FishNet/Library
+/PredictionDemo-Mirror/Assets/Mirror
+/PredictionDemo-Mirror/Assets/Scalable Grid Prototype Materials
+/PredictionDemo-Mirror/build
+/PredictionDemo-Mirror/Library
+/PredictionDemo-PurrNet/Assets/PurrDiction
+/PredictionDemo-PurrNet/Assets/PurrNet
+/PredictionDemo-PurrNet/Assets/Scalable Grid Prototype Materials
+/PredictionDemo-PurrNet/build
+/PredictionDemo-PurrNet/Library
+/PredictionDemo-PurrNet/Temp
+/PredictionDemo-Mirror/obj
