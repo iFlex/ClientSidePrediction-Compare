@@ -17,6 +17,7 @@ public class PredictedPlayerController : TickNetworkBehaviour
     [SerializeField] private GameObject _playerPrefab;
     
     [SerializeField] private float RotationPower = 10;
+    [SerializeField] private float BoostRotationPower = 30;
     [SerializeField] private float ThrottlePower = 10;
     [SerializeField] private float BoostPower = 50;
     
@@ -116,9 +117,17 @@ public class PredictedPlayerController : TickNetworkBehaviour
         // Be sure to always apply and set velocities using PredictionRigidbody
         // and never on the rigidbody itself; this includes if also accessing from
         // another script.
-        
-        Vector3 torqueVector = RotationPower * data.steer * Vector3.up;
-        Vector3 throttleVector = Vector3.forward * ( data.boost ? Mathf.Sign(data.throttle) * BoostPower : ThrottlePower * data.throttle);
+
+        Vector3 torqueVector = Vector3.zero;
+        if (Mathf.Abs(0 - Mathf.Abs(data.steer)) > 0.05f)
+        {
+            torqueVector = (data.boost ? BoostRotationPower : RotationPower) * data.steer * Vector3.up;
+        }
+        Vector3 throttleVector = Vector3.zero;
+        if (Mathf.Abs(0 - Mathf.Abs(data.throttle)) > 0.05f)
+        {
+            throttleVector = Vector3.forward * ( data.boost ? Mathf.Sign(data.throttle) * BoostPower : ThrottlePower * data.throttle);
+        }
         
         PredictionRigidbody.AddRelativeTorque(torqueVector);
         if (!LimitSpeed || PredictionRigidbody.Rigidbody.linearVelocity.magnitude < GetMaxSpeed(data.boost))

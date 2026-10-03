@@ -11,6 +11,7 @@ namespace DefaultNamespace
         [SerializeField] private float MaxBoostTravelSpeed = 30f;
         
         [SerializeField] private float RotationPower = 10;
+        [SerializeField] private float BoostRotationPower = 30;
         [SerializeField] private float ThrottlePower = 10;
         [SerializeField] private float BoostPower = 50;
         [SerializeField] private Rigidbody rigidbody;
@@ -80,8 +81,16 @@ namespace DefaultNamespace
         
         public void ApplyForces()
         {
-            float rotToque = RotationPower * steer;
-            float throttleForce = boost ? Mathf.Sign(throttle) * BoostPower : ThrottlePower * throttle;
+            float rotToque = 0;
+            if (Mathf.Abs(steer) > 0.05f)
+            {
+                rotToque = (boost ? BoostRotationPower : RotationPower) * steer;
+            }
+            float throttleForce = 0;
+            if (Mathf.Abs(throttle) > 0.05f)
+            {
+                throttleForce = boost ? Mathf.Sign(throttle) * BoostPower : ThrottlePower * throttle;
+            }
             
             Debug.Log($"[PredictionPlayerController] ApplyForces rotT:{rotToque} throttleForce:{throttleForce}");
             rigidbody.AddRelativeTorque(Vector3.up * rotToque);

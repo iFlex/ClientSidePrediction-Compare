@@ -220,7 +220,7 @@ MonoBehaviour:
   _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
   _ownerSmoothedProperties: 255
-  _adaptiveInterpolation: 3
+  _adaptiveInterpolation: 0
   _spectatorSmoothedProperties: 255
   _spectatorInterpolation: 2
   _enableTeleport: 0
@@ -250,6 +250,9 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 4653735309945583308}
   _networkObjectCache: {fileID: 0}
   _tickCallbacks: 6
+  LimitSpeed: 1
+  MaxTravelSpeed: 15
+  MaxBoostTravelSpeed: 30
   _renderer: {fileID: 1764989873378399263}
   _playerPrefab: {fileID: 0}
   RotationPower: 10

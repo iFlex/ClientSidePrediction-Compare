@@ -650,7 +650,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DefaultNamespace.FishNetDemoConfig
   networkManager: {fileID: 890742907}
   tickRate: 60
-  renderingHz: 120
+  renderingHz: 60
   vSyncCount: 0
   runInBackground: 1
 --- !u!1 &1441850368 stripped

@@ -13,6 +13,7 @@ namespace DefaultNamespace
         [SerializeField] private float MaxBoostTravelSpeed = 30f;
             
         [SerializeField] private float RotationPower = 10;
+        [SerializeField] private float BoostRotationPower = 30;
         [SerializeField] private float ThrottlePower = 10;
         [SerializeField] private float BoostPower = 50;
 
@@ -52,8 +53,16 @@ namespace DefaultNamespace
         protected override void Simulate(PlayerInput input, ref PlayerState state, float delta)
         {
             // Forces must go through PredictedRigidbody (not the Rigidbody) so they are part of the rolled back state.
-            float rotTorque = RotationPower * input.steer;
-            float throttleForce = input.boost ? Mathf.Sign(input.throttle) * BoostPower : ThrottlePower * input.throttle;
+            float rotTorque = 0;
+            if (Mathf.Abs(input.steer) > 0.05f)
+            {
+                rotTorque = (input.boost ? BoostRotationPower : RotationPower) * input.steer;
+            }
+            float throttleForce = 0;
+            if (Mathf.Abs(input.throttle) > 0.05f)
+            {
+                throttleForce = input.boost ? Mathf.Sign(input.throttle) * BoostPower : ThrottlePower * input.throttle;
+            }
 
             _predictedRigidbody.AddRelativeTorque(Vector3.up * rotTorque);
             if (!LimitSpeed || _predictedRigidbody.linearVelocity.magnitude < GetMaxSpeed(input.boost))

@@ -14,6 +14,7 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     [SerializeField] private Rigidbody rigidbody;
     
     [SerializeField] private float RotationPower = 1;
+    [SerializeField] private float BoostRotationPower = 30;
     [SerializeField] private float ThrottlePower = 1;
     [SerializeField] private float BoostPower = 5;
     
@@ -84,8 +85,16 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     
     void ComputeForces()
     {
-        torqueVector = Vector3.up * RotationPower * rotate;
-        throttleVector = Vector3.forward * ( boost ? Mathf.Sign(throttle) * BoostPower : ThrottlePower * throttle);
+        torqueVector = Vector3.zero;
+        if (Mathf.Abs(rotate) > 0.05f)
+        {
+            torqueVector = Vector3.up * (boost ? BoostRotationPower : RotationPower) * rotate;
+        }
+        throttleVector = Vector3.zero;
+        if (Mathf.Abs(throttle) > 0.05f)
+        {
+            throttleVector = Vector3.forward * ( boost ? Mathf.Sign(throttle) * BoostPower : ThrottlePower * throttle);
+        }
     }
     
     [Command]
