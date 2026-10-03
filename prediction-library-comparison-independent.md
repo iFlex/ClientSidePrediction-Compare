@@ -19,7 +19,14 @@ Ursitoare line numbers refer to the files at `f2168cd`.
 - **Architecture** is now Ursitoare 1.5, FishNet 3, PurrDiction 1.5 (was 3 / 2 / 1). Coupling to the network layer is now scored here, not only under portability. Before, Ursitoare's static configuration counted against it while the others' coupling to their own stacks did not.
 - **Developer ergonomics** is now Ursitoare 2.5, FishNet 2.5, PurrDiction 1 (was 3 / 2 / 1). One-time glue code is now counted apart from the code each prediction feature needs. Ursitoare also gets credit for using the real `Rigidbody` rather than a wrapper.
 
-The order of the three libraries is unchanged. See sections 5.5 and 5.6.
+**Revision 3 (2026-10-03).**
+
+- **Code quality** is now Ursitoare 3, FishNet 1.5, PurrDiction 1.5 (was 3 / 2 / 1). It is now scored on maintainability alone. Functional defects are scored only under correctness, robustness, resilience and observability, so they are no longer counted twice. Library code only (section 5.12).
+- **Code size** for ergonomics now counts non-blank, non-comment lines only. Generic per-project scripts (Ursitoare's adapter and entity wrapper, FishNet's `RigidbodySync`) count as one-time costs, not per object. The ergonomics ranks don't change (section 5.6).
+- **Performance** no longer cites the demo's `PredictionManager.DEBUG = true` as a library cost. It now appears only as a note about the demo (section 5.1).
+- **New section 8** sets out the criteria behind every rubric.
+
+The order of the three libraries is unchanged throughout. See sections 5.1, 5.5, 5.6, 5.12 and 8.
 
 ## 1. Verdict
 
@@ -27,8 +34,8 @@ Overall ranking, mean rank over 20 categories with equal weights (1 = best):
 
 | Place | Library | Mean rank (20 categories) | Mean rank (17 required categories only) |
 |---|---|---|---|
-| 1 | **PurrDiction 1.3.3** | **1.68** | 1.76 |
-| 2 | **FishNet 4.7.3** | **2.08** | 2.06 |
+| 1 | **PurrDiction 1.3.3** | **1.70** | 1.79 |
+| 2 | **FishNet 4.7.3** | **2.05** | 2.03 |
 | 3 | **Ursitoare f2168cd** | **2.25** | 2.18 |
 
 The order is the same whether or not the three extra categories are counted. Those three are security, visual interpolation, and movement from several components with separate inputs.
@@ -37,7 +44,7 @@ The order is the same whether or not the three extra categories are counted. Tho
 
 - Performance becomes Ursitoare 1, FishNet 2, PurrDiction 3.
 - Memory becomes Ursitoare 2.5, FishNet 1, PurrDiction 2.5.
-- The 20-category means become PurrDiction 1.70, FishNet 2.10, Ursitoare 2.20.
+- The 20-category means become PurrDiction 1.73, FishNet 2.08, Ursitoare 2.20.
 
 The order still holds. The remaining gap comes from bandwidth, resilience and correctness.
 
@@ -45,7 +52,7 @@ The order still holds. The remaining gap comes from bandwidth, resilience and co
 
 - It is the most complete and most resilient of the three. It sends delta-compressed state against a baseline the client has acknowledged, packs input redundancy at the bit level, and adapts the client's lead from server-reported input slack. It also has predicted spawning and a hierarchy system, prediction policies per identity, soft correction, and determinism tooling: fixed point, soft float, and desync hashing.
 - That comes at a cost. It rolls back and replays every identity on every server frame. It saves full state for every identity every tick, and keeps histories 10 s long. That makes it the heaviest on CPU and memory.
-- It is the easiest to integrate. The demo player is 99 lines and the balls need no code at all. It ships no tests, and its coordinator is a single 3,419-line partial class.
+- It is the easiest to integrate. The demo player is 39 lines of code (non-blank, non-comment) and the balls need no code at all. It ships no tests, and its coordinator is a single 3,419-line partial class.
 
 **FishNet**
 
@@ -56,7 +63,7 @@ The order still holds. The remaining gap comes from bandwidth, resilience and co
 **Ursitoare**
 
 - It is the only one that reconciles conditionally. It compares states against thresholds and resimulates only when they diverge, so it has the best expected client CPU when predictions are right. It is transport-agnostic, has the most plug-in points, ships the most tests (106), and has the largest set of built-in prediction metrics (21 of 26).
-- It works with the real `Rigidbody`, so existing physics code needs no wrapper. Each new predicted feature needs little code. The cost is a one-time transport adapter, because none ships with the library.
+- It works with the real `Rigidbody`, so existing physics code needs no wrapper. Each new predicted feature needs little code. The cost is a one-time transport adapter of about 280 lines of code, because none ships with the library yet.
 - Many of those metrics are dead or unreliable. Bandwidth is the worst of the three: full uncompressed state per entity per connection per tick, and no input redundancy. Several configuration combinations leave entities with no correction at all.
 - Global static configuration, verbose logging on by default (including one log per entity per frame that can't be switched off), per-tick allocations, and an unbounded per-entity dictionary make it the least production-ready in its current state.
 
@@ -77,7 +84,7 @@ Ranks go from 1 (best) to 3. Ties share the average rank. Rows 18–20 are categ
 | 9 | Extensibility | 1 | 3 | 2 |
 | 10 | Resilience | 3 | 2 | 1 |
 | 11 | Robustness | 3 | 2 | 1 |
-| 12 | Code quality | 3 | 2 | 1 |
+| 12 | Code quality | 3 | 1.5 | 1.5 |
 | 13 | Test coverage | 1 | 2.5 | 2.5 |
 | 14 | Observability and debugging | 1 | 3 | 2 |
 | 15 | Correctness and determinism model | 3 | 2 | 1 |
@@ -86,8 +93,8 @@ Ranks go from 1 (best) to 3. Ties share the average rank. Rows 18–20 are categ
 | 18 | Security against client cheating | 3 | 1.5 | 1.5 |
 | 19 | Visual interpolation and smoothing | 3 | 2 | 1 |
 | 20 | Multi-component movement with separate inputs | 2 | 3 | 1 |
-| | **Mean rank (20)** | **2.25** | **2.08** | **1.68** |
-| | Mean rank (1–17 only) | 2.18 | 2.06 | 1.76 |
+| | **Mean rank (20)** | **2.25** | **2.05** | **1.70** |
+| | Mean rank (1–17 only) | 2.18 | 2.03 | 1.79 |
 
 ## 3. Measured indicators
 
@@ -110,9 +117,9 @@ All values are counted from the files. "Prediction scope" means:
 | Pooling references | 0 | 65 (`Pool`, `Caches<`) | 178 |
 | `Debug.Log` call sites | 94 | 34 (`NetworkManager.Log*`) | 63 |
 | Logging on by default | `LOG_ADDED_SERVER_STATES`, `LOG_RESIMULATION_STEPS`, `DEBUG_OWNERSHIP`, `MovingAverageInterpolator.DEBUG`, `LOG_POS`, and one log per frame per entity that can't be switched off | none | none |
-| Demo code, one-time glue (written once per project) | 612: 460 transport adapter + 107 generic entity wrapper + 45 config | 0 | 0 |
-| Demo code, per predicted player | 139 (about half of it empty state stubs) | 179 + 49 for two data structs | 99 |
-| Demo code, per free physics object (balls) | 0 (reuses the generic wrapper) | 96 (`RigidbodySync`) | 0 (only the `PredictedRigidbody` component) |
+| Demo code, one-time glue per project (non-blank, non-comment lines) | 277: 191 transport adapter (460 raw lines, including a large commented-out block and test-only helpers) + 55 generic entity wrapper + 31 config | 42 (`RigidbodySync`, generic for any free rigidbody) | 0 |
+| Demo code, per predicted player (code lines) | 54, of which about 42 are prediction code. The rest is keyboard reading; about 6 lines are empty state stubs | 63 + 24 for two data structs; about 67 prediction code once the color sync and keyboard reading are removed | 39, of which about 31 are prediction code |
+| Demo code, per free physics object (balls) | 0 (reuses the generic wrapper) | 0 (reuses `RigidbodySync`) | 0 (only the `PredictedRigidbody` component) |
 | Rigidbody access | Real `Rigidbody` | `PredictionRigidbody` wrapper, plus a manual `.Simulate()` | `PredictedRigidbody` component |
 | Dead or unreachable metrics found | 13 (section 4.4) | 1 (`ReduceClientTiming`) | 0 found |
 | Package version | 1.0.0, with placeholder author email and keywords | 4.7.3 | 1.3.3, on a beta PurrNet |
@@ -258,8 +265,9 @@ This section is inferred from data structures and control flow.
   - `LOG_RESIMULATION_STEPS = true` formats a 10-decimal state string per entity per replay step (`:26,554-557`).
   - `MovingAverageInterpolator.DEBUG` and `LOG_POS` default to true (`U/Interpolation/MovingAverageInterpolator.cs:16-17`).
   - `ApplyState` calls `PosAnalyser.LogAndPrintPosRot` with no condition, every frame, for every entity (`:154`).
-  - The demo also turns on `PredictionManager.DEBUG` (`UD/NetworkPredictionManagerAdapter.cs:62`).
 - With logging off, it should be the cheapest on the client.
+
+*Demo note, not scored:* the Ursitoare demo adapter also sets `PredictionManager.DEBUG = true` (`UD/NetworkPredictionManagerAdapter.cs:62`). That is the demo's choice, not a library default, so it isn't counted here.
 
 **FishNet: rank 1.5**
 
@@ -359,7 +367,7 @@ Revised in revision 2. All three are now scored on the same five criteria, and c
 | Independence from the network layer | **Best.** The core never touches a network type; transport is 5 delegates (`U/ClientPredictionManager.cs:35-46`, `U/ServerPredictionManager.cs:35-49`) | Worst. Prediction is built into `NetworkBehaviour` and `NetworkObject` as partial classes (1,514 + 671 lines), driven by `TimeManager` (`F/Managing/Timing/TimeManager.cs:688-779`) and codegen RPCs | Coupled. `PredictionManager : NetworkIdentity`, with `[TargetRpc]` and `[ServerRpc]` in the coordinator itself (`P/Core/PredictionManager.cs:20,2041-2051`) |
 | Swappable core strategies | **Best.** Interfaces for physics, the correction decider, the interpolator and the timer | Worst. `sealed` manager (`F/Managing/Prediction/PredictionManager.cs:26`), and the reconcile-always policy is fixed | Middle. Policies per identity, but the rollback algorithm and lead controller are fixed (`:2202-2222`) |
 | Size and focus of the central class | Good. Separate client and server managers, each under 750 lines | Spread across core framework types | Worst. A 3,419-line coordinator handling input upload, frame encoding, rollback, lead control and visibility, plus a 2,092-line `PredictedHierarchy.cs` |
-| Configuration and state management | **Worst.** More than 40 mutable `public static` fields in 6 classes (`U/PredictionManager.cs:15-44`, `ServerPredictedEntity.cs:13-28`); `Instance` singletons overwritten by every constructor (`U/PredictionManager.cs:115`, `ClientPredictionManager.cs:42`, `ServerPredictionManager.cs:48`); values copied at construction (`ServerPredictedEntity.cs:72`, `ClientPredictionManager.cs:126-127`) | Instance-based, through `NetworkManager` | Instance-based, with locked inspector settings |
+| Configuration and state management | **Worst.** 81 mutable `public static` configuration fields across the library (`U/PredictionManager.cs:15-44`, `ServerPredictedEntity.cs:13-28`); `Instance` singletons overwritten by every constructor (`U/PredictionManager.cs:115`, `ClientPredictionManager.cs:42`, `ServerPredictionManager.cs:48`); values copied at construction (`ServerPredictedEntity.cs:72`, `ClientPredictionManager.cs:126-127`) | Instance-based, through `NetworkManager` | Instance-based, with locked inspector settings |
 | Design of the prediction model | Basic. One timeline plus a threshold decision | Replicate/reconcile with state order modes | **Best.** Verified and speculative timelines, prediction policies, modules, baselines acknowledged by the client (`:2328-2434`) |
 
 **Ursitoare: rank 1.5.** It has the best layering and plug-in points, and the worst configuration and state handling. Moving the statics into an instance-level settings object would fix most of that.
@@ -374,16 +382,16 @@ Revised in revision 2. Code is now split into one-time glue and the cost per pre
 
 | | Ursitoare | FishNet | PurrDiction |
 |---|---|---|---|
-| One-time glue | 612 lines, because no transport adapter ships with the library | 0 | 0 |
-| Per player | 139 lines: 2 interfaces, 12 methods, about half of them empty state stubs (`UD/PredictablePlayerController.cs:117-138`) | 179 lines plus 49 for data structs | 99 lines |
-| Per free physics object | 0 | 96 lines (`FD/RigidbodySync.cs:69-73` sends a default replicate and reconcile every tick) | 0 |
+| One-time glue per project (code lines) | About 277 (adapter 191, entity wrapper 55, config 31), because no transport adapter ships with the library yet | 42: a generic `RigidbodySync` for free bodies (`FD/RigidbodySync.cs:69-73` sends a default replicate and reconcile every tick) | 0 |
+| Per player (code lines) | About 42 prediction code: 2 interfaces, 12 methods, about 6 of them empty state stubs (`UD/PredictablePlayerController.cs:117-138`) | About 67 prediction code: controller plus two data structs | About 31 prediction code |
+| Per free physics object | 0 | 0 (after the one-time script) | 0 |
 | Rigidbody access | Real `Rigidbody` (`UD/PredictablePlayerController.cs:104-110`); state is restored straight onto it (`U/Data/PhysicsStateRecord.cs:86-92`) | `PredictionRigidbody` wrapper plus a manual `.Simulate()` (`FD/PredictedPlayerController.cs:135-151`) | `PredictedRigidbody` component (`PD/PredictedPlayerController.cs:70-79`) |
 | Silent misuse | Any force applied outside `ApplyForces()` (collision scripts, other MonoBehaviours) isn't re-applied during resimulation. Input slices must be read in write order (`AbstractPredictedEntity.cs:548-555`). About a dozen switch combinations turn off correction (5.15; the library's own `docs/configuration-conflicts.md` lists 13) | Using the real `Rigidbody` drops forces from rollback. `IsFuture` handling. Codegen catches signature mistakes | Using the real `Rigidbody` drops forces from rollback. One-shot inputs need `ModifyExtrapolatedInput` |
 | Concepts to learn | 2 interfaces, plus static switches | Replicate and Reconcile, `ReplicateState`, `CreateReconcile`, `PredictionRigidbody`, state forwarding, state order | Identity with `INPUT` and `STATE`, `Simulate`, optional overrides |
 
 **PurrDiction: rank 1.** It needs the least code and has the fewest concepts; spawning is one call to `hierarchy.Create` (`PD/BallSpawner.cs:134`).
 
-**Ursitoare: rank 2.5.** It needs less code per feature than FishNet, and existing physics code works unchanged on the real `Rigidbody`. The one-time adapter and its configuration pitfalls hold it back. If the adapter already exists, as it does in the Mirror projects, it edges ahead of FishNet.
+**Ursitoare: rank 2.5.** It needs about 25 fewer lines of code per player than FishNet, and existing physics code works unchanged on the real `Rigidbody`. The one-time adapter and its configuration pitfalls hold it back. The code-size gap is small, so it doesn't decide the rank on its own. Even with the planned separately shipped adapter, a tie with FishNet remains the most defensible score: FishNet's codegen checks and fewer silent-misuse paths offset Ursitoare's lighter API.
 
 **FishNet: rank 2.5.** It has more concepts and boilerplate, a wrapper, and per-object scripts for free bodies. Codegen catches some mistakes at compile time.
 
@@ -485,11 +493,24 @@ The detailed table of extension points is in 5.21.
 
 ### 5.12 Code quality
 
-**PurrDiction: rank 1.** Consistent style, pooled resources, and testable static helpers. Downsides are the very large files and catches that swallow errors silently.
+Revised in revision 3. This section scores maintainability only, from library code only. Functional defects are scored under correctness (5.15), robustness (5.11), resilience (5.10) and observability (4.4), and are not counted again here.
 
-**FishNet: rank 2.** Polished, but with dead `DO_NOT_USE` paths, a dead field, the inverted unsubscribe guard, and a time-source mix-up (4.4).
+| Criterion | Ursitoare | FishNet | PurrDiction |
+|---|---|---|---|
+| Size and focus of classes and methods | **Good.** Largest file 738 lines (`U/ClientPredictionManager.cs`), short methods | Long methods: `ReconcileToStates` about 185 lines (`F/Managing/Prediction/PredictionManager.cs:549-734`), `Replicate_NonAuthoritative` about 135 (`F/Object/NetworkBehaviour/NetworkBehaviour.Prediction.cs:598-732`) | **Worst.** A 3,419-line coordinator; `WriteInitialFrameToOthers` about 160 lines (`P/Core/PredictionManager.cs:1160-1317`), `ProcessQueuedFrames` about 145 (`:2523-2666`) |
+| Duplication | The same null-GameObject guard and log is pasted into 9 loops (`U/ClientPredictionManager.cs`, `NULL_PREDICTED_GAME_OBJECT`) | Low; shared helpers such as `ReplicateTickFinder` (`NetworkBehaviour.Prediction.cs:32-156`) | Low; small `internal static` helpers |
+| Dead and unfinished code | 98 TODO-style markers; 3 switches never read (`ServerPredictedEntity.cs:14,16`, `U/PredictionManager.cs:30`); about 11 commented-out code lines | `#if DO_NOT_USE` paths and a dead `GetDeltaSerializeOption` body (`NetworkBehaviour.Prediction.cs:409-413,851-873`); a commented-out `CreateLocalStateUpdate` (`F/Managing/Prediction/PredictionManager.cs:863-888`); a dead field (`:229`) | 1 FIXME, in a vendored `libm` |
+| Naming and consistency | Mixed conventions (`SCREAMING_CASE` statics, `_MaxDistD`, `_avgDistD` that holds sums); typos (`CanResiumlate`, `LOG_CLIENT_INUPTS`, `artifficialDelay`); tab indentation in 3 of 33 files | Consistent | Consistent |
+| In-code documentation | No XML docs. The external Markdown manual is good, but it isn't in the code | 19% of lines are XML docs | 3.7%, concentrated on the public API |
+| State and configuration hygiene | 81 `public static` configuration fields, and `Instance` singletons | Instance-based | Instance-based, with `const` tuning values |
+| Testability seams | **Best.** Small interfaces, mocks are used, 106 tests | Hard to test: codegen and partial classes | Pure `internal static` helpers (`ComputeTickPacingScale`, `RequiresReliableRecovery`) |
+| Resource and error-handling idioms | No pooling; `Debug.Log` throughout | Pooling throughout | Pooling, and profiler markers with `try/finally`; some catches swallow errors without logging |
 
-**Ursitoare: rank 3.** Dead switches (`APPLY_FORCES_TO_EACH_CATCHUP_INPUT`, `BUFFER_ONCE`, `TRACK_TIMING_STATS`), a distance calculation that always returns 0 (`(ent.position - ent.position)` at `U/ClientPredictionManager.cs:280`), reference aliasing of input records (5.15), and the issues in 4.4.
+**FishNet: rank 1.5.** Consistent and well documented. Points off for long methods and dead blocks.
+
+**PurrDiction: rank 1.5.** Consistent, with good testable helpers. Points off for one very large coordinator. I read less of PurrDiction than of the others, so its maintainability issues are the most likely to be under-found.
+
+**Ursitoare: rank 3.** Its small, testable units are a real strength. It loses on the TODO and dead-switch backlog, the 81 static fields, the duplicated guards, inconsistent naming, and no in-code docs. All of this can be fixed by cleanup alone, with no behaviour changes, and that would likely put it level with the other two.
 
 ### 5.13 Test coverage
 
@@ -668,6 +689,45 @@ Rewind restores only tracked bodies, but replay steps the whole scene.
 - **Configuration sensitivity:** Ursitoare's CPU rank assumes its default logging is turned off. As shipped, its client cost is dominated by `Debug.Log`.
 - **Tie rule:** ties share the average rank, and the overall verdict uses an unweighted mean. With weights that favor CPU, FishNet moves up. With weights that favor network quality, PurrDiction's lead grows.
 
+## 8. Scoring criteria for each rubric
+
+### 8.1 General rules
+
+- **Rank, not points.** Each category ranks the three libraries 1 to 3 (1 = best). Ties share the average rank (1.5 / 1.5, or 2.5 / 2.5). The verdict is the unweighted mean over the categories.
+- **Library code first.** Every category is scored from the library's runtime code, except two:
+  - **Developer ergonomics** uses the demos too, as the brief asks, because integration effort can only be judged from integration code.
+  - **Correctness** may cite demo code, but only to show what a library defect does in practice. The defect itself must be in library code.
+- **Shipped defaults count.** A cost that a library default switches on counts against the library. A cost that only the demo switches on is reported as a demo note and isn't scored.
+- **Each finding is scored in one category only.** A functional defect counts under the category it breaks (correctness, robustness, resilience or observability), not again under code quality or readability. Coupling to the network stack counts under both architecture (how the library is built) and portability (what it costs you to move). Those are different consequences of the same fact.
+- **Measured vs inferred.** Counts and the code paths cited are measured. Runtime cost, memory footprint, bandwidth and behaviour under the network are inferred from data structures and control flow. Nothing was run.
+- **Code size** counts non-blank, non-comment lines. Generic per-project scripts count once, not per object.
+- **Review depth.** Where one library was read much less than the others (PurrDiction), a close call goes to a tie rather than to the library whose faults were harder to find.
+
+### 8.2 Criteria per rubric
+
+| # | Rubric | What is judged | Main evidence | Not counted here |
+|---|---|---|---|---|
+| 1 | Performance (expected CPU) | Client and server CPU per tick in the steady state: how often replay runs and how many ticks it covers, physics steps per tick, per-tick bookkeeping (state saves, encoding), and the cost of default logging and allocations | Control flow of the tick, reconcile and replay loops; logging defaults; pooling | Demo-only settings; complexity class (rubric 2) |
+| 2 | Computational complexity | Big-O per tick in E (entities), L (local entities), P (physics bodies), S(P) (one physics step), R (replay length), C (connections), H (history size); whether the R factor applies every tick or only on correction | Loop nesting, data-structure operations (dictionary scans, ring buffers) | Constant factors (rubric 1) |
+| 3 | Memory overhead | Bounded vs unbounded growth (weighted most), per-tick allocations and GC pressure, pooling, then size of the resident history | Buffer capacities, `new` in per-tick paths, collections that are never trimmed | Bandwidth buffers in the transport |
+| 4 | Bandwidth efficiency | Bytes per entity per client per tick: full vs delta state, quantization and packing, send-on-change, batching, compression, input redundancy and how it's encoded | Serializers and send paths | Transport-level compression outside the prediction code |
+| 5 | Architecture | Independence from the network layer; swappable core strategies; size and focus of the central classes; configuration and state management; design of the prediction model (timelines, policies) | Type dependencies, interfaces, file and class sizes, statics and singletons | Bugs; documentation |
+| 6 | Developer ergonomics | One-time code before anything works; code per predicted feature; number of concepts and size of the API; whether existing physics code works unchanged (real `Rigidbody` vs a wrapper); paths to silent misuse; whether defaults are correct out of the box; compile-time checks | Demo scripts (code lines), public API, defaults | Runtime cost |
+| 7 | Readability | How quickly a newcomer can follow the core loop: amount of code to trace, naming, explanatory comments, noise (dead blocks, commented-out code), file size | Reading the core loop end to end | Bugs |
+| 8 | Comprehensiveness | Features present in the box: predicted spawning, lag compensation, clock or lead control, determinism tooling, smoothing, prediction policies, physics events, interest management, profiling | Presence of runtime types and components | How good each feature is (other rubrics) |
+| 9 | Extensibility | How much of the *algorithm* can be replaced (decision, physics backend, interpolation, transport, timer) and how much *behaviour* can be extended (hooks, virtual methods, custom state and serializers); limits such as sealed classes and constants | Interfaces, virtual and abstract members, events (section 5.21) | Ease of use of those hooks (rubric 6) |
+| 10 | Resilience | Behaviour under packet loss, jitter, late or missing input and clock drift: input redundancy and resends, server input buffering, missing-input policy, recovery from gaps, lead and clock control, history length relative to RTT | Upload, receive and recovery paths; timing controllers | Exceptions and misuse (rubric 11) |
+| 11 | Robustness | Exception isolation in the tick, configuration validation and conflict detection, failure modes under misuse, resource leaks, payload validation | try/catch placement, `Validate` and `OnValidate`, subscribe/unsubscribe symmetry | Network conditions (rubric 10) |
+| 12 | Code quality | Maintainability only: size and focus of methods and classes, duplication, dead and unfinished code, naming consistency, in-code documentation, state and configuration hygiene, testability seams, resource and error-handling idioms | Static counts (TODOs, `///`, statics, duplication) and reading | Functional defects (rubrics 10, 11, 14, 15) |
+| 13 | Test coverage | Number and breadth of tests shipped with the library; how much of the prediction loop they cover; whether they match the code | Test files in the package | Tests that may exist elsewhere but aren't shipped |
+| 14 | Observability and debugging | Coverage of the 13 metric questions (Yes = 2, Partial = 1), adjusted down for metrics that are dead, unreliable or development-build only; profiler markers; hooks for custom instrumentation | Section 4: every metric traced to a write site | |
+| 15 | Correctness and determinism model | When and how the client is corrected; whether any entity can end up with no correction; whether corrections are authoritative or convergent; how state is restored (part of the world vs all of it); determinism tooling | Decision and rollback paths, default switch values | Performance of the correction |
+| 16 | Portability and lock-in | Which networking stack and engine features the library needs; the effort to move it to another transport | Dependencies, transport boundary | Internal structure (rubric 5) |
+| 17 | Maturity and ecosystem | Version and release status, adoption and community, documentation channels, known production use | Package metadata, docs, git history | Code quality |
+| 18 | Security against client cheating | Ownership checks on input, rate and quantity limits per tick (speed hacks), validation hooks, response to abuse (kick or drop) | Server input receive and consume paths | Encryption and authentication (transport) |
+| 19 | Visual interpolation and smoothing | Visual delay added for the owner and for remote entities, how corrections are hidden (error decay, snap thresholds), jitter-buffer handling, configurability, known defects | View and interpolation code | Prediction accuracy |
+| 20 | Multi-component movement with separate inputs | Whether several components on one object can each own a typed input and state; how inputs are routed and encoded on the wire; ordering guarantees; how a shared rigidbody is handled; pitfalls | Input sampling, registration and routing code (section 5.20) | General ergonomics |
+
 ## Appendix: evidence behind each ranking
 
 Every row cites code as `file:line`, using the prefixes defined at the top. Code was read at the stated versions.
@@ -679,13 +739,13 @@ Every row cites code as `file:line`, using the prefixes defined at the top. Code
 | Memory | Unbounded dictionary: `ClientPredictedEntity.cs:84,534-535`. Ownership leak: `U/ServerPredictionManager.cs:150,248`. Interpolator allocations: `MovingAverageInterpolator.cs:267,346`. FishNet capacity 60: `RingBuffer.cs:155`, `PredictionProcessor.cs:512`. PurrDiction histories: `PredictedIdentityStatefull.cs:147`, `PredictionManager.cs:222`, `PredictedIdentityWithInput.cs:48` |
 | Bandwidth | Full per-entity sends: `U/ServerPredictionManager.cs:98-128,327-348`, `U/Data/PhysicsStateRecord.cs:10-17`. FishNet send-on-change: `NetworkBehaviour.Prediction.cs:465-492,565-586`. Delta disabled: `:409-413,851-873`. Rotation packing: `RigidbodyState.cs:76-89`. PurrDiction delta and bit: `PredictedIdentityStatefull.cs:424-446`. Compression: `PredictionManager.cs:2041`. Input repeat: `:1100-1117` |
 | Architecture | Section 5.5 table. Transport delegates: `U/ClientPredictionManager.cs:35-46`, `U/ServerPredictionManager.cs:35-49`. Statics and singletons: `U/PredictionManager.cs:15-44,115`, `ServerPredictedEntity.cs:13-28,72`. FishNet sealed manager: `F/Managing/Prediction/PredictionManager.cs:26`; prediction partials in `F/Object/NetworkBehaviour/NetworkBehaviour.Prediction.cs`, `F/Object/NetworkObject/NetworkObject.Prediction.cs`. PurrDiction coupling and controllers: `P/Core/PredictionManager.cs:20,2041-2051,2328-2434` |
-| Ergonomics | Demo sizes in section 3. `PD/PredictedPlayerController.cs`, `PD/BallSpawner.cs:134`. `FD/PredictedPlayerController.cs`, `FD/RigidbodySync.cs:69-73`, `FD/PredictedPlayerController.cs:135-151`. `UD/NetworkPredictionManagerAdapter.cs`, `UD/PredictablePlayerController.cs:104-110,117-138`, `U/Data/PhysicsStateRecord.cs:86-92`, `AbstractPredictedEntity.cs:548-555` |
+| Ergonomics | Code-line counts (non-blank, non-comment) in section 3. `PD/PredictedPlayerController.cs`, `PD/BallSpawner.cs:134`. `FD/PredictedPlayerController.cs`, `FD/RigidbodySync.cs:69-73`, `FD/PredictedPlayerController.cs:135-151`. `UD/NetworkPredictionManagerAdapter.cs`, `UD/PredictablePlayerController.cs:104-110,117-138`, `U/Data/PhysicsStateRecord.cs:86-92`, `AbstractPredictedEntity.cs:548-555` |
 | Readability | XML and TODO counts in section 3. Typos: `U/ClientPredictionManager.cs:558`, `ServerPredictedEntity.cs:21`, `PredictedEntityVisuals.cs:36`. FishNet explanatory comments: `F/Managing/Prediction/PredictionManager.cs:601-629` |
 | Comprehensiveness | `P/Hierarchy/`, `P/Core/DesyncPolicy.cs`, `P/Core/PredictionPolicy.cs`, `P/FixedPoint/`, `P/SoftFloat/`. `F/Plugins/ColliderRollback/Scripts/RollbackManager.cs:23`, `F/Generated/Component/TakeOwnership/PredictedSpawn.cs` |
 | Extensibility | Table 5.21. `ClientPredictedEntity.cs:140-162`, `U/Simulation/PhysicsController.cs:9-20`, `U/PredictionManager.cs:39-42`. `P/Core/PredictionManager.cs:2202-2222` |
 | Resilience | Upload and resend: `P/Core/PredictionManager.cs:993-1140`. Gap catch-up: `:2117-2161`. Lead: `:2339-2416,2591-2620`. FishNet redundancy and clock: `NetworkBehaviour.Prediction.cs:878-911`, `TimeManager.cs:1130-1228`. Ignored freeze result: `U/ClientPredictionManager.cs:95,380-408` |
 | Robustness | Phase catches: `P/Core/PredictionManager.cs:815-887,3175-3178`. FishNet `OnValidate` and kick: `F/Managing/Prediction/PredictionManager.cs:479-497`, `NetworkBehaviour.Prediction.cs:1027-1031`. Leak: `NetworkObject.Prediction.cs:389-410`. Ursitoare: `U/ServerPredictionManager.cs:46,61-70,190-197`, `U/Wrappers/WrapperHelpers.cs:47-52` |
-| Code quality | Zero distance: `U/ClientPredictionManager.cs:280`. Dead switches: `ServerPredictedEntity.cs:14,16`, `U/PredictionManager.cs:30`. FishNet dead field: `F/Managing/Prediction/PredictionManager.cs:229` |
+| Code quality | Maintainability only, library code only (section 5.12 table). Duplicated guard: 9 occurrences of `NULL_PREDICTED_GAME_OBJECT` in `U/ClientPredictionManager.cs`. Dead switches: `ServerPredictedEntity.cs:14,16`, `U/PredictionManager.cs:30`. FishNet dead blocks: `NetworkBehaviour.Prediction.cs:409-413,851-873`, `F/Managing/Prediction/PredictionManager.cs:229,863-888`. PurrDiction method sizes: `P/Core/PredictionManager.cs:1160-1317,2523-2666` |
 | Tests | 106 `[Test]` attributes in `UT/`. No NUnit references in FishNet's or PurrDiction's prediction packages |
 | Observability | Section 4 |
 | Correctness | `U/PredictionManager.cs:24`, `ClientPredictedEntity.cs:210-250`, `U/ClientPredictionManager.cs:255-266,289-310,384-413`. Aliasing: `U/ServerPredictionManager.cs:109-110`, `ServerPredictedEntity.cs:183,275-280`, `UD/PredictablePlayerController.cs:64-73`. FishNet pauser: `NetworkObject.Prediction.cs:462-469`. PurrDiction policies: `PredictionPolicy.cs:252-298`, `PredictionManager.Desync.cs:91-140` |
