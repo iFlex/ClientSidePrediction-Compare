@@ -113,3 +113,10 @@ InitTestScene*.unity*
 /PredictionDemo-Ursitoare/Temp
 /PredictionDemo-Ursitoare/Assets/Mirror
 /PredictionDemo-Ursitoare/build
+PredictionDemo-Ursitoare/build/PredictionDemo-Ursitoare_Data/boot.config
+PredictionDemo-Ursitoare/build/PredictionDemo-Ursitoare_Data/globalgamemanagers
+PredictionDemo-Ursitoare/build/PredictionDemo-Ursitoare_Data/globalgamemanagers.assets
+PredictionDemo-Ursitoare/build/PredictionDemo-Ursitoare_Data/level0
+PredictionDemo-Ursitoare/build/PredictionDemo-Ursitoare_Data/Managed/Assembly-CSharp.dll
+PredictionDemo-Ursitoare/build/PredictionDemo-Ursitoare_Data/resources.assets
+PredictionDemo-Ursitoare/build/PredictionDemo-Ursitoare_Data/sharedassets0.assets
