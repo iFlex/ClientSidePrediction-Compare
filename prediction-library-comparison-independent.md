@@ -14,17 +14,32 @@ Independent review, written 2026-10-03, read from source only. Nothing was run. 
 
 Ursitoare line numbers refer to the files at `f2168cd`.
 
+**Revision 2 (2026-10-03).** Two ranks were re-scored after review:
+
+- **Architecture** is now Ursitoare 1.5, FishNet 3, PurrDiction 1.5 (was 3 / 2 / 1). Coupling to the network layer is now scored here, not only under portability. Before, Ursitoare's static configuration counted against it while the others' coupling to their own stacks did not.
+- **Developer ergonomics** is now Ursitoare 2.5, FishNet 2.5, PurrDiction 1 (was 3 / 2 / 1). One-time glue code is now counted apart from the code each prediction feature needs. Ursitoare also gets credit for using the real `Rigidbody` rather than a wrapper.
+
+The order of the three libraries is unchanged. See sections 5.5 and 5.6.
+
 ## 1. Verdict
 
 Overall ranking, mean rank over 20 categories with equal weights (1 = best):
 
 | Place | Library | Mean rank (20 categories) | Mean rank (17 required categories only) |
 |---|---|---|---|
-| 1 | **PurrDiction 1.3.3** | **1.65** | 1.74 |
-| 2 | **FishNet 4.7.3** | **2.00** | 1.97 |
-| 3 | **Ursitoare f2168cd** | **2.35** | 2.29 |
+| 1 | **PurrDiction 1.3.3** | **1.68** | 1.76 |
+| 2 | **FishNet 4.7.3** | **2.08** | 2.06 |
+| 3 | **Ursitoare f2168cd** | **2.25** | 2.18 |
 
 The order is the same whether or not the three extra categories are counted. Those three are security, visual interpolation, and movement from several components with separate inputs.
+
+**How sensitive this is to cheap fixes (inferred):** suppose Ursitoare's per-entity `tickResimCounter` (`ClientPredictedEntity.cs:84`, a plain `Dictionary`) became a `TickIndexedBuffer`, and its logging were removed, including the unconditional calls in `MovingAverageInterpolator.cs:87,154,231,262`. Then:
+
+- Performance becomes Ursitoare 1, FishNet 2, PurrDiction 3.
+- Memory becomes Ursitoare 2.5, FishNet 1, PurrDiction 2.5.
+- The 20-category means become PurrDiction 1.70, FishNet 2.10, Ursitoare 2.20.
+
+The order still holds. The remaining gap comes from bandwidth, resilience and correctness.
 
 **PurrDiction**
 
@@ -36,11 +51,12 @@ The order is the same whether or not the three extra categories are counted. Tho
 
 - It is the most mature and has the most consistent quality. Allocations are pooled, it has 33 profiler markers in the prediction code, dense XML documentation, input redundancy, send-on-change reconciles, clock-drift correction, and lag compensation.
 - It reconciles and replays on every received state, without comparing anything. It never measures prediction error, which makes it the weakest on observability: 10 of 26 points.
-- It is tied to FishNet's transport and codegen. The core algorithm can't be replaced. One subscription leak was found (section 5.12).
+- Prediction is built into FishNet's core `NetworkBehaviour` and `NetworkObject` types and its codegen. The core algorithm can't be replaced, which puts it last on architecture. One subscription leak was found (section 5.11).
 
 **Ursitoare**
 
 - It is the only one that reconciles conditionally. It compares states against thresholds and resimulates only when they diverge, so it has the best expected client CPU when predictions are right. It is transport-agnostic, has the most plug-in points, ships the most tests (106), and has the largest set of built-in prediction metrics (21 of 26).
+- It works with the real `Rigidbody`, so existing physics code needs no wrapper. Each new predicted feature needs little code. The cost is a one-time transport adapter, because none ships with the library.
 - Many of those metrics are dead or unreliable. Bandwidth is the worst of the three: full uncompressed state per entity per connection per tick, and no input redundancy. Several configuration combinations leave entities with no correction at all.
 - Global static configuration, verbose logging on by default (including one log per entity per frame that can't be switched off), per-tick allocations, and an unbounded per-entity dictionary make it the least production-ready in its current state.
 
@@ -54,8 +70,8 @@ Ranks go from 1 (best) to 3. Ties share the average rank. Rows 18–20 are categ
 | 2 | Computational complexity | 1 | 2 | 3 |
 | 3 | Memory overhead | 3 | 1 | 2 |
 | 4 | Bandwidth efficiency | 3 | 2 | 1 |
-| 5 | Architecture | 3 | 2 | 1 |
-| 6 | Developer ergonomics | 3 | 2 | 1 |
+| 5 | Architecture | 1.5 | 3 | 1.5 |
+| 6 | Developer ergonomics | 2.5 | 2.5 | 1 |
 | 7 | Readability | 2.5 | 1 | 2.5 |
 | 8 | Comprehensiveness | 3 | 2 | 1 |
 | 9 | Extensibility | 1 | 3 | 2 |
@@ -70,8 +86,8 @@ Ranks go from 1 (best) to 3. Ties share the average rank. Rows 18–20 are categ
 | 18 | Security against client cheating | 3 | 1.5 | 1.5 |
 | 19 | Visual interpolation and smoothing | 3 | 2 | 1 |
 | 20 | Multi-component movement with separate inputs | 2 | 3 | 1 |
-| | **Mean rank (20)** | **2.35** | **2.00** | **1.65** |
-| | Mean rank (1–17 only) | 2.29 | 1.97 | 1.74 |
+| | **Mean rank (20)** | **2.25** | **2.08** | **1.68** |
+| | Mean rank (1–17 only) | 2.18 | 2.06 | 1.76 |
 
 ## 3. Measured indicators
 
@@ -94,7 +110,10 @@ All values are counted from the files. "Prediction scope" means:
 | Pooling references | 0 | 65 (`Pool`, `Caches<`) | 178 |
 | `Debug.Log` call sites | 94 | 34 (`NetworkManager.Log*`) | 63 |
 | Logging on by default | `LOG_ADDED_SERVER_STATES`, `LOG_RESIMULATION_STEPS`, `DEBUG_OWNERSHIP`, `MovingAverageInterpolator.DEBUG`, `LOG_POS`, and one log per frame per entity that can't be switched off | none | none |
-| Demo integration code (player + balls + glue) | 460 adapter + 107 entity + 139 player + 45 config = 751 | 179 player + 26 + 23 data structs + 96 ball = 324 | 99 player + 50 spawner = 149 (the balls need no code) |
+| Demo code, one-time glue (written once per project) | 612: 460 transport adapter + 107 generic entity wrapper + 45 config | 0 | 0 |
+| Demo code, per predicted player | 139 (about half of it empty state stubs) | 179 + 49 for two data structs | 99 |
+| Demo code, per free physics object (balls) | 0 (reuses the generic wrapper) | 96 (`RigidbodySync`) | 0 (only the `PredictedRigidbody` component) |
+| Rigidbody access | Real `Rigidbody` | `PredictionRigidbody` wrapper, plus a manual `.Simulate()` | `PredictedRigidbody` component |
 | Dead or unreachable metrics found | 13 (section 4.4) | 1 (`ReduceClientTiming`) | 0 found |
 | Package version | 1.0.0, with placeholder author email and keywords | 4.7.3 | 1.3.3, on a beta PurrNet |
 
@@ -333,44 +352,40 @@ This section is inferred from what the code writes.
 
 ### 5.5 Architecture
 
-**PurrDiction: rank 1**
+Revised in revision 2. All three are now scored on the same five criteria, and coupling to the network layer counts here as well as under portability.
 
-- It separates verified and speculative timelines, prediction policies per identity, modules, hierarchy, visibility and desync handling into partial files (`P/Core/PredictionManager.*.cs`).
-- It has explicit controllers for client lead and pacing (`:2328-2434`).
-- On the downside, the coordinator file is 3,419 lines and `PredictedHierarchy.cs` is 2,092.
+| Criterion | Ursitoare | FishNet | PurrDiction |
+|---|---|---|---|
+| Independence from the network layer | **Best.** The core never touches a network type; transport is 5 delegates (`U/ClientPredictionManager.cs:35-46`, `U/ServerPredictionManager.cs:35-49`) | Worst. Prediction is built into `NetworkBehaviour` and `NetworkObject` as partial classes (1,514 + 671 lines), driven by `TimeManager` (`F/Managing/Timing/TimeManager.cs:688-779`) and codegen RPCs | Coupled. `PredictionManager : NetworkIdentity`, with `[TargetRpc]` and `[ServerRpc]` in the coordinator itself (`P/Core/PredictionManager.cs:20,2041-2051`) |
+| Swappable core strategies | **Best.** Interfaces for physics, the correction decider, the interpolator and the timer | Worst. `sealed` manager (`F/Managing/Prediction/PredictionManager.cs:26`), and the reconcile-always policy is fixed | Middle. Policies per identity, but the rollback algorithm and lead controller are fixed (`:2202-2222`) |
+| Size and focus of the central class | Good. Separate client and server managers, each under 750 lines | Spread across core framework types | Worst. A 3,419-line coordinator handling input upload, frame encoding, rollback, lead control and visibility, plus a 2,092-line `PredictedHierarchy.cs` |
+| Configuration and state management | **Worst.** More than 40 mutable `public static` fields in 6 classes (`U/PredictionManager.cs:15-44`, `ServerPredictedEntity.cs:13-28`); `Instance` singletons overwritten by every constructor (`U/PredictionManager.cs:115`, `ClientPredictionManager.cs:42`, `ServerPredictionManager.cs:48`); values copied at construction (`ServerPredictedEntity.cs:72`, `ClientPredictionManager.cs:126-127`) | Instance-based, through `NetworkManager` | Instance-based, with locked inspector settings |
+| Design of the prediction model | Basic. One timeline plus a threshold decision | Replicate/reconcile with state order modes | **Best.** Verified and speculative timelines, prediction policies, modules, baselines acknowledged by the client (`:2328-2434`) |
 
-**FishNet: rank 2**
+**Ursitoare: rank 1.5.** It has the best layering and plug-in points, and the worst configuration and state handling. Moving the statics into an instance-level settings object would fix most of that.
 
-- Prediction is consistent with the rest of FishNet. Codegen produces the replicate and reconcile plumbing, `TimeManager` drives the tick (`F/Managing/Timing/TimeManager.cs:688-779`), and events fan out to objects.
-- It is tightly coupled. `PredictionManager` is `sealed`, and the reconcile-always policy is built in.
+**PurrDiction: rank 1.5.** It has the best prediction model, but it is coupled to PurrNet and concentrated in one very large class.
 
-**Ursitoare: rank 3**
-
-- It has a good separation: transport delegates, a `PhysicsController` interface, a decider interface, an interpolator interface, and separate client and server entities.
-- But its configuration is **global mutable static state** spread over more than 40 `public static` fields in 6 classes, for example `U/PredictionManager.cs:15-44` and `ServerPredictedEntity.cs:13-28`.
-- `Instance` singletons are overwritten by every constructor (`U/PredictionManager.cs:115`, `ClientPredictionManager.cs:42`, `ServerPredictionManager.cs:48`).
-- Some values are read only at construction time (`ServerPredictedEntity.cs:72`, `ClientPredictionManager.cs:126-127`).
+**FishNet: rank 3.** On these criteria it comes last, because prediction is part of the framework's core types and can't be swapped. That says nothing about how well its prediction works.
 
 ### 5.6 Developer ergonomics
 
-**PurrDiction: rank 1**
+Revised in revision 2. Code is now split into one-time glue and the cost per predicted feature (see section 3), and access to the real `Rigidbody` is scored.
 
-- The player is 99 lines: an `INPUT` struct, a `STATE` struct, and `Simulate` (`PD/PredictedPlayerController.cs`).
-- Balls only need a `PredictedRigidbody` and a prefab entry. Spawning is one call to `hierarchy.Create` (`PD/BallSpawner.cs:134`).
-- One pitfall is silent: forces must go through `PredictedRigidbody`, not the `Rigidbody` (`PD/PredictedPlayerController.cs:70`).
+| | Ursitoare | FishNet | PurrDiction |
+|---|---|---|---|
+| One-time glue | 612 lines, because no transport adapter ships with the library | 0 | 0 |
+| Per player | 139 lines: 2 interfaces, 12 methods, about half of them empty state stubs (`UD/PredictablePlayerController.cs:117-138`) | 179 lines plus 49 for data structs | 99 lines |
+| Per free physics object | 0 | 96 lines (`FD/RigidbodySync.cs:69-73` sends a default replicate and reconcile every tick) | 0 |
+| Rigidbody access | Real `Rigidbody` (`UD/PredictablePlayerController.cs:104-110`); state is restored straight onto it (`U/Data/PhysicsStateRecord.cs:86-92`) | `PredictionRigidbody` wrapper plus a manual `.Simulate()` (`FD/PredictedPlayerController.cs:135-151`) | `PredictedRigidbody` component (`PD/PredictedPlayerController.cs:70-79`) |
+| Silent misuse | Any force applied outside `ApplyForces()` (collision scripts, other MonoBehaviours) isn't re-applied during resimulation. Input slices must be read in write order (`AbstractPredictedEntity.cs:548-555`). About a dozen switch combinations turn off correction (5.15; the library's own `docs/configuration-conflicts.md` lists 13) | Using the real `Rigidbody` drops forces from rollback. `IsFuture` handling. Codegen catches signature mistakes | Using the real `Rigidbody` drops forces from rollback. One-shot inputs need `ModifyExtrapolatedInput` |
+| Concepts to learn | 2 interfaces, plus static switches | Replicate and Reconcile, `ReplicateState`, `CreateReconcile`, `PredictionRigidbody`, state forwarding, state order | Identity with `INPUT` and `STATE`, `Simulate`, optional overrides |
 
-**FishNet: rank 2**
+**PurrDiction: rank 1.** It needs the least code and has the fewest concepts; spawning is one call to `hierarchy.Create` (`PD/BallSpawner.cs:134`).
 
-- The player is 179 lines, plus two data structs and a 96-line ball script that sends a default replicate every tick (`FD/RigidbodySync.cs:297-301`).
-- There are many concepts to learn: Replicate and Reconcile, `ReplicateState` and `IsFuture`, `CreateReconcile`, `PredictionRigidbody`, state forwarding and state order.
-- Codegen catches signature mistakes. Using the `Rigidbody` directly instead of `PredictionRigidbody` fails silently.
+**Ursitoare: rank 2.5.** It needs less code per feature than FishNet, and existing physics code works unchanged on the real `Rigidbody`. The one-time adapter and its configuration pitfalls hold it back. If the adapter already exists, as it does in the Mirror projects, it edges ahead of FishNet.
 
-**Ursitoare: rank 3**
-
-- Integration needs a 460-line transport adapter, a 107-line entity wrapper, and two interfaces with 12 methods (`UD/`).
-- Inputs are ordered float and bool slices whose read order has to match the write order exactly (`AbstractPredictedEntity.cs:548-555`).
-- About a dozen switch combinations quietly turn off correction (5.15).
-- The library's own self-review lists 13 conflicts (`C:\Development\Ursitoare\docs\configuration-conflicts.md`).
+**FishNet: rank 2.5.** It has more concepts and boilerplate, a wrapper, and per-object scripts for free bodies. Codegen catches some mistakes at compile time.
 
 ### 5.7 Readability
 
@@ -663,8 +678,8 @@ Every row cites code as `file:line`, using the prefixes defined at the top. Code
 | Complexity | Follower loop: `U/ClientPredictionManager.cs:268-310,322-376`. O(H) eviction: `U/Utils/TickIndexedBuffer.cs:24-43,180-204`. Replay loops: `U/ClientPredictionManager.cs:465-503`, `F/Managing/Prediction/PredictionManager.cs:702-721`, `P/Core/PredictionManager.cs:2833-2839`. Server encode per client: `P/Core/PredictionManager.cs:1166-1314` |
 | Memory | Unbounded dictionary: `ClientPredictedEntity.cs:84,534-535`. Ownership leak: `U/ServerPredictionManager.cs:150,248`. Interpolator allocations: `MovingAverageInterpolator.cs:267,346`. FishNet capacity 60: `RingBuffer.cs:155`, `PredictionProcessor.cs:512`. PurrDiction histories: `PredictedIdentityStatefull.cs:147`, `PredictionManager.cs:222`, `PredictedIdentityWithInput.cs:48` |
 | Bandwidth | Full per-entity sends: `U/ServerPredictionManager.cs:98-128,327-348`, `U/Data/PhysicsStateRecord.cs:10-17`. FishNet send-on-change: `NetworkBehaviour.Prediction.cs:465-492,565-586`. Delta disabled: `:409-413,851-873`. Rotation packing: `RigidbodyState.cs:76-89`. PurrDiction delta and bit: `PredictedIdentityStatefull.cs:424-446`. Compression: `PredictionManager.cs:2041`. Input repeat: `:1100-1117` |
-| Architecture | Statics and singletons: `U/PredictionManager.cs:15-44,115`, `ServerPredictedEntity.cs:13-28,72`. FishNet sealed manager: `F/Managing/Prediction/PredictionManager.cs:26`. Tick: `TimeManager.cs:688-779`. PurrDiction partials and controllers: `P/Core/PredictionManager.cs:2328-2434` |
-| Ergonomics | Demo sizes in section 3. `PD/PredictedPlayerController.cs`, `PD/BallSpawner.cs:134`. `FD/PredictedPlayerController.cs`, `FD/RigidbodySync.cs:297-301`. `UD/NetworkPredictionManagerAdapter.cs`, `UD/PredictablePlayerController.cs`, `AbstractPredictedEntity.cs:548-555` |
+| Architecture | Section 5.5 table. Transport delegates: `U/ClientPredictionManager.cs:35-46`, `U/ServerPredictionManager.cs:35-49`. Statics and singletons: `U/PredictionManager.cs:15-44,115`, `ServerPredictedEntity.cs:13-28,72`. FishNet sealed manager: `F/Managing/Prediction/PredictionManager.cs:26`; prediction partials in `F/Object/NetworkBehaviour/NetworkBehaviour.Prediction.cs`, `F/Object/NetworkObject/NetworkObject.Prediction.cs`. PurrDiction coupling and controllers: `P/Core/PredictionManager.cs:20,2041-2051,2328-2434` |
+| Ergonomics | Demo sizes in section 3. `PD/PredictedPlayerController.cs`, `PD/BallSpawner.cs:134`. `FD/PredictedPlayerController.cs`, `FD/RigidbodySync.cs:69-73`, `FD/PredictedPlayerController.cs:135-151`. `UD/NetworkPredictionManagerAdapter.cs`, `UD/PredictablePlayerController.cs:104-110,117-138`, `U/Data/PhysicsStateRecord.cs:86-92`, `AbstractPredictedEntity.cs:548-555` |
 | Readability | XML and TODO counts in section 3. Typos: `U/ClientPredictionManager.cs:558`, `ServerPredictedEntity.cs:21`, `PredictedEntityVisuals.cs:36`. FishNet explanatory comments: `F/Managing/Prediction/PredictionManager.cs:601-629` |
 | Comprehensiveness | `P/Hierarchy/`, `P/Core/DesyncPolicy.cs`, `P/Core/PredictionPolicy.cs`, `P/FixedPoint/`, `P/SoftFloat/`. `F/Plugins/ColliderRollback/Scripts/RollbackManager.cs:23`, `F/Generated/Component/TakeOwnership/PredictedSpawn.cs` |
 | Extensibility | Table 5.21. `ClientPredictedEntity.cs:140-162`, `U/Simulation/PhysicsController.cs:9-20`, `U/PredictionManager.cs:39-42`. `P/Core/PredictionManager.cs:2202-2222` |
