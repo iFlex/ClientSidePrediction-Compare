@@ -9,14 +9,16 @@ namespace DefaultNamespace
         public float steer;
         public bool strafeLeft;
         public bool strafeRight;
-        
-        public PlayerReplicateData(bool boost, float throttle, float steer, bool strafeLeft, bool strafeRight) : this()
+        public bool spin;
+
+        public PlayerReplicateData(bool boost, float throttle, float steer, bool strafeLeft, bool strafeRight, bool spin) : this()
         {
             this.boost = boost;
             this.throttle = throttle;
             this.steer = steer;
             this.strafeLeft = strafeLeft;
             this.strafeRight = strafeRight;
+            this.spin = spin;
         }
 
         private uint _tick;

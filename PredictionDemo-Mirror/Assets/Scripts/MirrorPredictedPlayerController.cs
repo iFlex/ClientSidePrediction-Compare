@@ -1,5 +1,6 @@
 using Mirror;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class MirrorPredictedPlayerController : NetworkBehaviour
 {
@@ -14,7 +15,7 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     [SerializeField] private Rigidbody rigidbody;
     
     [SerializeField] private float RotationPower = 1;
-    [SerializeField] private float BoostRotationPower = 30;
+    [FormerlySerializedAs("BoostRotationPower")] [SerializeField] private float SpinRotationPower = 30;
     [SerializeField] private float ThrottlePower = 1;
     [SerializeField] private float BoostPower = 5;
     
@@ -23,6 +24,7 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     [SerializeField] bool boost;
     [SerializeField] bool strafeLeft;
     [SerializeField] bool strafeRight;
+    [SerializeField] bool spin;
     [SerializeField] private bool groundTest = false;
     [SerializeField] private GameObject ground;
     
@@ -67,6 +69,11 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     {
         return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
     }
+
+    bool ReadKeyboardSpin()
+    {
+        return UnityEngine.InputSystem.Keyboard.current.leftShiftKey.isPressed;
+    }
     
     private void FixedUpdate()
     {
@@ -77,6 +84,7 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
             boost = ReadKeyboardBoost();
             strafeLeft = ReadKeyboardStrafeLeft();
             strafeRight = ReadKeyboardStrafeRight();
+            spin = ReadKeyboardSpin();
 
             ComputeForces();
             predictedRigidbody.predictedRigidbody.AddRelativeTorque(torqueVector);
@@ -84,7 +92,7 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
             {
                 predictedRigidbody.predictedRigidbody.AddRelativeForce(throttleVector);
             }
-            CmdApplyServerForce(rotate, throttle, boost, strafeLeft, strafeRight);
+            CmdApplyServerForce(rotate, throttle, boost, strafeLeft, strafeRight, spin);
         }
 
         //TODO: a better host mode check?
@@ -95,7 +103,8 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
             boost = ReadKeyboardBoost();
             strafeLeft = ReadKeyboardStrafeLeft();
             strafeRight = ReadKeyboardStrafeRight();
-            LocalApplyForces(rotate, throttle, boost, strafeLeft, strafeRight);
+            spin = ReadKeyboardSpin();
+            LocalApplyForces(rotate, throttle, boost, strafeLeft, strafeRight, spin);
         }
     }
     
@@ -104,7 +113,7 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
         torqueVector = Vector3.zero;
         if (Mathf.Abs(rotate) > 0.05f)
         {
-            torqueVector = Vector3.up * (boost ? BoostRotationPower : RotationPower) * rotate;
+            torqueVector = Vector3.up * (spin ? SpinRotationPower : RotationPower) * rotate;
         }
         throttleVector = Vector3.zero;
         if (Mathf.Abs(throttle) > 0.05f)
@@ -122,18 +131,19 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     }
 
     [Command]
-    void CmdApplyServerForce(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight)
+    void CmdApplyServerForce(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight, bool cspin)
     {
-        LocalApplyForces(crotate, cthrottle, cboost, cstrafeLeft, cstrafeRight);
+        LocalApplyForces(crotate, cthrottle, cboost, cstrafeLeft, cstrafeRight, cspin);
     }
 
-    void LocalApplyForces(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight)
+    void LocalApplyForces(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight, bool cspin)
     {
         rotate = crotate;
         throttle = cthrottle;
         boost = cboost;
         strafeLeft = cstrafeLeft;
         strafeRight = cstrafeRight;
+        spin = cspin;
         ComputeForces();
         
         rigidbody.AddRelativeTorque(torqueVector);

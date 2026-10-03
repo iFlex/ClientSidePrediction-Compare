@@ -5,6 +5,7 @@ using FishNet.Transporting;
 using FishNet.Utility.Template;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class PredictedPlayerController : TickNetworkBehaviour
 {
@@ -17,7 +18,7 @@ public class PredictedPlayerController : TickNetworkBehaviour
     [SerializeField] private GameObject _playerPrefab;
     
     [SerializeField] private float RotationPower = 10;
-    [SerializeField] private float BoostRotationPower = 30;
+    [FormerlySerializedAs("BoostRotationPower")] [SerializeField] private float SpinRotationPower = 30;
     [SerializeField] private float ThrottlePower = 10;
     [SerializeField] private float BoostPower = 50;
     
@@ -78,6 +79,11 @@ public class PredictedPlayerController : TickNetworkBehaviour
     {
         return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
     }
+
+    bool ReadKeyboardSpin()
+    {
+        return UnityEngine.InputSystem.Keyboard.current.leftShiftKey.isPressed;
+    }
     
     private void Update()
     {
@@ -99,7 +105,7 @@ public class PredictedPlayerController : TickNetworkBehaviour
         // REMARK: why aer you reading the input data again here?
         //float horizontal = Input.GetAxisRaw("Horizontal");
         //float vertical = Input.GetAxisRaw("Vertical");
-        PlayerReplicateData md = new PlayerReplicateData(ReadKeyboardBoost(), ReadKeyboardThrottle(), ReadKeyboardRotate(), ReadKeyboardStrafeLeft(), ReadKeyboardStrafeRight());
+        PlayerReplicateData md = new PlayerReplicateData(ReadKeyboardBoost(), ReadKeyboardThrottle(), ReadKeyboardRotate(), ReadKeyboardStrafeLeft(), ReadKeyboardStrafeRight(), ReadKeyboardSpin());
         // REMARK: why are you forcing jump to false now?
         //_jump = false;
 
@@ -131,7 +137,7 @@ public class PredictedPlayerController : TickNetworkBehaviour
         Vector3 torqueVector = Vector3.zero;
         if (Mathf.Abs(0 - Mathf.Abs(data.steer)) > 0.05f)
         {
-            torqueVector = (data.boost ? BoostRotationPower : RotationPower) * data.steer * Vector3.up;
+            torqueVector = (data.spin ? SpinRotationPower : RotationPower) * data.steer * Vector3.up;
         }
         Vector3 throttleVector = Vector3.zero;
         if (Mathf.Abs(0 - Mathf.Abs(data.throttle)) > 0.05f)

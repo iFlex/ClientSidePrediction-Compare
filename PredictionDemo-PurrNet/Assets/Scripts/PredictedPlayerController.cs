@@ -1,5 +1,6 @@
 using PurrNet.Prediction;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.InputSystem;
 
 namespace DefaultNamespace
@@ -13,7 +14,7 @@ namespace DefaultNamespace
         [SerializeField] private float MaxBoostTravelSpeed = 30f;
             
         [SerializeField] private float RotationPower = 10;
-        [SerializeField] private float BoostRotationPower = 30;
+        [FormerlySerializedAs("BoostRotationPower")] [SerializeField] private float SpinRotationPower = 30;
         [SerializeField] private float ThrottlePower = 10;
         [SerializeField] private float BoostPower = 50;
 
@@ -50,6 +51,7 @@ namespace DefaultNamespace
             input.boost = keyboard.spaceKey.isPressed;
             input.strafeLeft = keyboard.qKey.isPressed;
             input.strafeRight = keyboard.eKey.isPressed;
+            input.spin = keyboard.leftShiftKey.isPressed;
         }
 
         protected override void Simulate(PlayerInput input, ref PlayerState state, float delta)
@@ -58,7 +60,7 @@ namespace DefaultNamespace
             float rotTorque = 0;
             if (Mathf.Abs(input.steer) > 0.05f)
             {
-                rotTorque = (input.boost ? BoostRotationPower : RotationPower) * input.steer;
+                rotTorque = (input.spin ? SpinRotationPower : RotationPower) * input.steer;
             }
             float throttleForce = 0;
             if (Mathf.Abs(input.throttle) > 0.05f)
@@ -89,6 +91,7 @@ namespace DefaultNamespace
             public bool boost;
             public bool strafeLeft;
             public bool strafeRight;
+            public bool spin;
 
             public void Dispose() { }
         }

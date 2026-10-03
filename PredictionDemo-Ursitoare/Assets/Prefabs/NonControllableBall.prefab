@@ -120,7 +120,7 @@ Transform:
   m_GameObject: {fileID: 102630359568949666}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 575.2913, y: 0.00005, z: 1813.7655}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -207,7 +207,10 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  renderer: {fileID: 0}
+  predictionComponents: []
   _rigidbody: {fileID: 4502829533418071610}
+  bufferSize: 50
   visuals: {fileID: 5814290320337558380}
 --- !u!114 &5814290320337558380
 MonoBehaviour:

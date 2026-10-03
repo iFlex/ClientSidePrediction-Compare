@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 989
   m_ShowMode: 4
-  m_Title: Hierarchy
+  m_Title: Inspector
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 300}
   m_MaxSize: {x: 10000, y: 10000}
@@ -1639,7 +1639,7 @@ MonoBehaviour:
   m_Position:
     m_Target: {x: 11.84859, y: -5.883461, z: -3.6324584}
     speed: 2
-    m_Value: {x: 11.84859, y: -5.883461, z: -3.6324584}
+    m_Value: {x: 575.2913, y: 0.000050008297, z: 1813.7655}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1691,7 +1691,7 @@ MonoBehaviour:
   m_Size:
     m_Target: 37.67022
     speed: 2
-    m_Value: 37.67022
+    m_Value: 0.8660254
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -1770,10 +1770,13 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -5150
-      - m_Data: -4876
-      - m_Data: -3840
-      - m_Data: -1328
+      - m_Data: -9422
+      - m_Data: -9148
+      - m_Data: -8152
+      - m_Data: -5050
+      - m_Data: -4776
+      - m_Data: -3740
+      - m_Data: -1294
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1989,7 +1992,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 0
     m_Folders:
-    - Assets
+    - Assets/Prefabs
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1999,7 +2002,7 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 16
   m_LastFolders:
-  - Assets
+  - Assets/Prefabs
   m_LastFoldersGridSize: 16
   m_LastProjectPath: D:\gamedev\PredictionCompare\PredictionDemo-Ursitoare
   m_LockTracker:
@@ -2008,13 +2011,13 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs:
-    - m_Data: 49122
+    - m_Data: 49312
     m_LastClickedID:
-      m_Data: 49122
+      m_Data: 49312
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 49120
-    - m_Data: 49122
+    - m_Data: 49086
+    - m_Data: 49088
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2047,8 +2050,8 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 49120
-    - m_Data: 49122
+    - m_Data: 49086
+    - m_Data: 49088
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2077,7 +2080,7 @@ MonoBehaviour:
   m_ListAreaState:
     m_SelectedInstanceIDs: []
     m_LastClickedInstanceID: 0
-    m_HadKeyboardFocusLastEvent: 0
+    m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 765740
     - m_Data: 108770
@@ -2124,7 +2127,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 3}
+    m_ScrollPosition: {x: 0, y: 0}
     m_GridSize: 16
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 312

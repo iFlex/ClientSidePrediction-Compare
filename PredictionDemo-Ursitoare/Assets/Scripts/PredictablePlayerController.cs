@@ -1,6 +1,7 @@
 ﻿using Prediction.Components;
 using Prediction.Data;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DefaultNamespace
 {
@@ -11,7 +12,7 @@ namespace DefaultNamespace
         [SerializeField] private float MaxBoostTravelSpeed = 30f;
         
         [SerializeField] private float RotationPower = 10;
-        [SerializeField] private float BoostRotationPower = 30;
+        [FormerlySerializedAs("BoostRotationPower")] [SerializeField] private float SpinRotationPower = 30;
         [SerializeField] private float ThrottlePower = 10;
         [SerializeField] private float BoostPower = 50;
         [SerializeField] private Rigidbody rigidbody;
@@ -21,6 +22,7 @@ namespace DefaultNamespace
         [SerializeField] private bool boost;
         [SerializeField] private bool strafeLeft;
         [SerializeField] private bool strafeRight;
+        [SerializeField] private bool spin;
         float ReadKeyboardThrottle()
         {
             float up = UnityEngine.InputSystem.Keyboard.current.upArrowKey.isPressed ? 1 : 0;
@@ -49,6 +51,11 @@ namespace DefaultNamespace
         {
             return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
         }
+
+        bool ReadKeyboardSpin()
+        {
+            return UnityEngine.InputSystem.Keyboard.current.leftShiftKey.isPressed;
+        }
         
         public int GetFloatInputCount()
         {
@@ -57,7 +64,7 @@ namespace DefaultNamespace
 
         public int GetBinaryInputCount()
         {
-            return 3;
+            return 4;
         }
 
         public void SampleInput(PredictionInputRecord input)
@@ -67,6 +74,7 @@ namespace DefaultNamespace
             input.WriteNextBinary(ReadKeyboardBoost());
             input.WriteNextBinary(ReadKeyboardStrafeLeft());
             input.WriteNextBinary(ReadKeyboardStrafeRight());
+            input.WriteNextBinary(ReadKeyboardSpin());
         }
 
         public bool ValidateInput(float deltaTime, PredictionInputRecord input)
@@ -81,6 +89,7 @@ namespace DefaultNamespace
             boost = input.ReadNextBool();
             strafeLeft = input.ReadNextBool();
             strafeRight = input.ReadNextBool();
+            spin = input.ReadNextBool();
         }
 
         public void ClearInput()
@@ -90,6 +99,7 @@ namespace DefaultNamespace
             boost = false;
             strafeLeft = false;
             strafeRight = false;
+            spin = false;
         }
 
         float GetMaxSpeed(bool boosting)
@@ -102,7 +112,7 @@ namespace DefaultNamespace
             float rotToque = 0;
             if (Mathf.Abs(steer) > 0.05f)
             {
-                rotToque = (boost ? BoostRotationPower : RotationPower) * steer;
+                rotToque = (spin ? SpinRotationPower : RotationPower) * steer;
             }
             float throttleForce = 0;
             if (Mathf.Abs(throttle) > 0.05f)
