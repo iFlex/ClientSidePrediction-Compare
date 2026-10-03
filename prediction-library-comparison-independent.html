@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction Library Comparison</title>
+<style>
+:root{--bg:#fbfbf9;--fg:#1d1f22;--muted:#5b6068;--card:#ffffff;--border:#dcdfe3;--accent:#2f5fd0;--code-bg:#eef0f3;--th:#f1f3f6;--stripe:#f7f8fa}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15171a;--fg:#e4e6ea;--muted:#9aa1ab;--card:#1c1f23;--border:#33373d;--accent:#8fb0ff;--code-bg:#262a30;--th:#22262b;--stripe:#1f2226}}
+:root[data-theme="dark"]{--bg:#15171a;--fg:#e4e6ea;--muted:#9aa1ab;--card:#1c1f23;--border:#33373d;--accent:#8fb0ff;--code-bg:#262a30;--th:#22262b;--stripe:#1f2226}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.75rem;line-height:1.25;margin:.2em 0 .6em}
+h2{font-size:1.35rem;margin:2.2em 0 .6em;padding-top:.6em;border-top:1px solid var(--border)}
+h3{font-size:1.1rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em}
+a{color:var(--accent)}
+code{background:var(--code-bg);padding:.08em .35em;border-radius:4px;font:0.86em/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+.tw{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:8px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;min-width:90px}
+th{background:var(--th);position:sticky;top:0}
+tbody tr:nth-child(even){background:var(--stripe)}
+tbody tr:last-child td{border-bottom:none}
+ul{padding-left:1.3em}
+li{margin:.25em 0}
+nav.toc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin:1em 0}
+nav.toc ul{margin:.3em 0;columns:2;column-gap:2em}
+.themebtn{position:fixed;top:10px;right:10px;background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.8rem;cursor:pointer}
+@media (max-width:640px){nav.toc ul{columns:1}h1{font-size:1.4rem}th,td{min-width:120px}}
+</style>
+</head>
+<body>
+<button class="themebtn" type="button" onclick="var r=document.documentElement;var d=r.getAttribute('data-theme');var dark=d?d==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.setAttribute('data-theme',dark?'light':'dark');">Toggle theme</button>
+<main>
+<h1 id="client-side-prediction-in-unity-ursitoare-vs-fishnet-4-7-3-vs-purrdiction-1-3-3">Client-side prediction in Unity: Ursitoare vs FishNet 4.7.3 vs PurrDiction 1.3.3</h1>
+<nav class="toc"><strong>Contents</strong><ul>
+<li><a href="#1-verdict">1. Verdict</a></li>
+<li><a href="#2-ranking-matrix">2. Ranking matrix</a></li>
+<li><a href="#3-measured-indicators">3. Measured indicators</a></li>
+<li><a href="#4-prediction-metrics-inventory">4. Prediction metrics inventory</a></li>
+<li><a href="#5-per-category-analysis">5. Per-category analysis</a></li>
+<li><a href="#6-which-to-pick">6. Which to pick</a></li>
+<li><a href="#7-method-and-caveats">7. Method and caveats</a></li>
+<li><a href="#appendix-evidence-behind-each-ranking">Appendix: evidence behind each ranking</a></li>
+</ul></nav>
+<p>Independent review, written 2026-10-03, read from source only. Nothing was run. Ursitoare is at commit <code>f2168cd</code>. FishNet is at 4.7.3. PurrDiction is at 1.3.3, on PurrNet 1.23.0-beta.51. Mirror&#39;s own <code>PredictedRigidbody</code> is out of scope.</p>
+<p><strong>Path prefixes used in citations</strong></p>
+<ul>
+<li><code>U/</code> = <code>C:\Development\Ursitoare\Runtime\src\</code></li>
+<li><code>UT/</code> = <code>C:\Development\Ursitoare\Tests\Runtime\</code></li>
+<li><code>UD/</code> = <code>D:\gamedev\PredictionCompare\PredictionDemo-Ursitoare\Assets\Scripts\</code></li>
+<li><code>F/</code> = <code>PredictionDemo-FishNet\Assets\FishNet\Runtime\</code></li>
+<li><code>FD/</code> = <code>PredictionDemo-FishNet\Assets\Scripts\</code></li>
+<li><code>P/</code> = <code>PredictionDemo-PurrNet\Assets\PurrDiction\Runtime\</code></li>
+<li><code>PD/</code> = <code>PredictionDemo-PurrNet\Assets\Scripts\</code></li>
+</ul>
+<p>Ursitoare line numbers refer to the files at <code>f2168cd</code>.</p>
+<h2 id="1-verdict">1. Verdict</h2>
+<p>Overall ranking, mean rank over 20 categories with equal weights (1 = best):</p>
+<div class="tw"><table><thead><tr><th>Place</th><th>Library</th><th>Mean rank (20 categories)</th><th>Mean rank (17 required categories only)</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>PurrDiction 1.3.3</strong></td><td><strong>1.65</strong></td><td>1.74</td></tr>
+<tr><td>2</td><td><strong>FishNet 4.7.3</strong></td><td><strong>2.00</strong></td><td>1.97</td></tr>
+<tr><td>3</td><td><strong>Ursitoare f2168cd</strong></td><td><strong>2.35</strong></td><td>2.29</td></tr>
+</tbody></table></div>
+<p>The order is the same whether or not the three extra categories are counted. Those three are security, visual interpolation, and movement from several components with separate inputs.</p>
+<p><strong>PurrDiction</strong></p>
+<ul>
+<li>It is the most complete and most resilient of the three. It sends delta-compressed state against a baseline the client has acknowledged, packs input redundancy at the bit level, and adapts the client&#39;s lead from server-reported input slack. It also has predicted spawning and a hierarchy system, prediction policies per identity, soft correction, and determinism tooling: fixed point, soft float, and desync hashing.</li>
+<li>That comes at a cost. It rolls back and replays every identity on every server frame. It saves full state for every identity every tick, and keeps histories 10 s long. That makes it the heaviest on CPU and memory.</li>
+<li>It is the easiest to integrate. The demo player is 99 lines and the balls need no code at all. It ships no tests, and its coordinator is a single 3,419-line partial class.</li>
+</ul>
+<p><strong>FishNet</strong></p>
+<ul>
+<li>It is the most mature and has the most consistent quality. Allocations are pooled, it has 33 profiler markers in the prediction code, dense XML documentation, input redundancy, send-on-change reconciles, clock-drift correction, and lag compensation.</li>
+<li>It reconciles and replays on every received state, without comparing anything. It never measures prediction error, which makes it the weakest on observability: 10 of 26 points.</li>
+<li>It is tied to FishNet&#39;s transport and codegen. The core algorithm can&#39;t be replaced. One subscription leak was found (section 5.12).</li>
+</ul>
+<p><strong>Ursitoare</strong></p>
+<ul>
+<li>It is the only one that reconciles conditionally. It compares states against thresholds and resimulates only when they diverge, so it has the best expected client CPU when predictions are right. It is transport-agnostic, has the most plug-in points, ships the most tests (106), and has the largest set of built-in prediction metrics (21 of 26).</li>
+<li>Many of those metrics are dead or unreliable. Bandwidth is the worst of the three: full uncompressed state per entity per connection per tick, and no input redundancy. Several configuration combinations leave entities with no correction at all.</li>
+<li>Global static configuration, verbose logging on by default (including one log per entity per frame that can&#39;t be switched off), per-tick allocations, and an unbounded per-entity dictionary make it the least production-ready in its current state.</li>
+</ul>
+<h2 id="2-ranking-matrix">2. Ranking matrix</h2>
+<p>Ranks go from 1 (best) to 3. Ties share the average rank. Rows 18–20 are categories this review added.</p>
+<div class="tw"><table><thead><tr><th>#</th><th>Category</th><th>Ursitoare</th><th>FishNet</th><th>PurrDiction</th></tr></thead><tbody>
+<tr><td>1</td><td>Performance (expected CPU)</td><td>1.5</td><td>1.5</td><td>3</td></tr>
+<tr><td>2</td><td>Computational complexity</td><td>1</td><td>2</td><td>3</td></tr>
+<tr><td>3</td><td>Memory overhead</td><td>3</td><td>1</td><td>2</td></tr>
+<tr><td>4</td><td>Bandwidth efficiency</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>5</td><td>Architecture</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>6</td><td>Developer ergonomics</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>7</td><td>Readability</td><td>2.5</td><td>1</td><td>2.5</td></tr>
+<tr><td>8</td><td>Comprehensiveness</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>9</td><td>Extensibility</td><td>1</td><td>3</td><td>2</td></tr>
+<tr><td>10</td><td>Resilience</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>11</td><td>Robustness</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>12</td><td>Code quality</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>13</td><td>Test coverage</td><td>1</td><td>2.5</td><td>2.5</td></tr>
+<tr><td>14</td><td>Observability and debugging</td><td>1</td><td>3</td><td>2</td></tr>
+<tr><td>15</td><td>Correctness and determinism model</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>16</td><td>Portability and lock-in</td><td>1</td><td>2.5</td><td>2.5</td></tr>
+<tr><td>17</td><td>Maturity and ecosystem</td><td>3</td><td>1</td><td>2</td></tr>
+<tr><td>18</td><td>Security against client cheating</td><td>3</td><td>1.5</td><td>1.5</td></tr>
+<tr><td>19</td><td>Visual interpolation and smoothing</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>20</td><td>Multi-component movement with separate inputs</td><td>2</td><td>3</td><td>1</td></tr>
+<tr><td></td><td><strong>Mean rank (20)</strong></td><td><strong>2.35</strong></td><td><strong>2.00</strong></td><td><strong>1.65</strong></td></tr>
+<tr><td></td><td>Mean rank (1–17 only)</td><td>2.29</td><td>1.97</td><td>1.74</td></tr>
+</tbody></table></div>
+<h2 id="3-measured-indicators">3. Measured indicators</h2>
+<p>All values are counted from the files. &quot;Prediction scope&quot; means:</p>
+<ul>
+<li><strong>Ursitoare:</strong> all of <code>Runtime/</code>.</li>
+<li><strong>FishNet:</strong> <code>Managing/Prediction</code>, <code>Object/Prediction</code>, <code>Managing/Timing</code>, <code>NetworkBehaviour.Prediction.cs</code>, <code>NetworkObject.Prediction.cs</code>, and the codegen <code>Processing/Prediction</code>.</li>
+<li><strong>PurrDiction:</strong> all of <code>Runtime/</code>. The core-only figure leaves out FixedPoint, SoftFloat, Hierarchy and similar folders.</li>
+</ul>
+<div class="tw"><table><thead><tr><th>Indicator</th><th>Ursitoare</th><th>FishNet</th><th>PurrDiction</th></tr></thead><tbody>
+<tr><td>Runtime files / lines (prediction scope)</td><td>33 / 5,688</td><td>23 / 7,880 (plus 8,568 lines of tick smoothing and prediction components)</td><td>123 / 27,800 (core 65 / 16,383; FixedPoint and SoftFloat 6,078)</td></tr>
+<tr><td>Codegen lines</td><td>0 (no codegen)</td><td>1,090</td><td>716</td></tr>
+<tr><td>Shipped tests</td><td><strong>106</strong> test methods, 14 files, 4,272 lines</td><td>0</td><td>0 (the <code>Test*</code> files are example scripts)</td></tr>
+<tr><td>XML doc lines (<code>///</code>)</td><td>0</td><td>1,529 (19% of lines)</td><td>1,027 (3.7%); 720 in core</td></tr>
+<tr><td>External docs</td><td>1,493 lines of Markdown (manual, tutorial, API, self-review)</td><td>Online GitBook (link in <code>DOCUMENTATION.txt</code>)</td><td>3 PDFs plus online docs</td></tr>
+<tr><td>TODO / FIXME / FUDO / FODO</td><td>98</td><td>0</td><td>1 (in vendored <code>libm</code>)</td></tr>
+<tr><td>try/catch blocks</td><td>12</td><td>0</td><td>30</td></tr>
+<tr><td>Profiler markers</td><td>0</td><td>33</td><td>22, plus one marker per identity type and per state type</td></tr>
+<tr><td>Pooling references</td><td>0</td><td>65 (<code>Pool</code>, <code>Caches&lt;</code>)</td><td>178</td></tr>
+<tr><td><code>Debug.Log</code> call sites</td><td>94</td><td>34 (<code>NetworkManager.Log*</code>)</td><td>63</td></tr>
+<tr><td>Logging on by default</td><td><code>LOG_ADDED_SERVER_STATES</code>, <code>LOG_RESIMULATION_STEPS</code>, <code>DEBUG_OWNERSHIP</code>, <code>MovingAverageInterpolator.DEBUG</code>, <code>LOG_POS</code>, and one log per frame per entity that can&#39;t be switched off</td><td>none</td><td>none</td></tr>
+<tr><td>Demo integration code (player + balls + glue)</td><td>460 adapter + 107 entity + 139 player + 45 config = 751</td><td>179 player + 26 + 23 data structs + 96 ball = 324</td><td>99 player + 50 spawner = 149 (the balls need no code)</td></tr>
+<tr><td>Dead or unreachable metrics found</td><td>13 (section 4.4)</td><td>1 (<code>ReduceClientTiming</code>)</td><td>0 found</td></tr>
+<tr><td>Package version</td><td>1.0.0, with placeholder author email and keywords</td><td>4.7.3</td><td>1.3.3, on a beta PurrNet</td></tr>
+</tbody></table></div>
+<h2 id="4-prediction-metrics-inventory">4. Prediction metrics inventory</h2>
+<h3 id="4-1-question-coverage">4.1 Question coverage</h3>
+<p>Scoring: Yes = 2, Partial = 1, No = 0.</p>
+<div class="tw"><table><thead><tr><th>Question</th><th>Ursitoare</th><th>FishNet</th><th>PurrDiction</th></tr></thead><tbody>
+<tr><td>How often does the client correct, and how far back does it replay?</td><td>Yes: <code>totalResimulations</code>, <code>totalResimulationSteps</code>, <code>maxRewindDistance</code>, <code>totalRewindDistance</code>, <code>TickStat.resimTicks</code></td><td>Partial: <code>OnPreReconcile(clientTick, serverTick)</code> against <code>LocalTick</code>. There is no counter, and it reconciles every state</td><td>Partial: <code>onStartingToRollback</code> / <code>onRollbackFinished</code> and <code>tickPhaseFrameAppliesTotal</code>. Replay depth isn&#39;t exposed</td></tr>
+<tr><td>How long does a correction take?</td><td>Yes: <code>TickStat.resimDuration</code>, <code>lastResimDuration</code></td><td>Partial: profiler markers only</td><td>Partial: the <code>RollbackToFrame</code> and <code>ReplayToLatestTick</code> markers, and the rollback events can be timed</td></tr>
+<tr><td>How large was the error (position, rotation, velocity)?</td><td>Yes: the decider&#39;s <code>_MaxDistD</code>, <code>_MaxRotD</code>, <code>_MaxVeloD</code>, <code>_MaxAVeloD</code> and the running sums. They are global and misnamed (4.4)</td><td>No: nothing is ever compared</td><td>Partial: the per-identity hook <code>OnVerifiedStateReceived(tick, predicted, verified)</code></td></tr>
+<tr><td>Which entity caused the correction?</td><td>Partial: the decider gets the entity id and <code>LOG_RESIMULATIONS</code> logs it, but no event carries it</td><td>No</td><td>Partial: identities are named only for deterministic desyncs (<code>onDesyncDetected</code>, <code>onLocalDesync</code>)</td></tr>
+<tr><td>Did players see a visible jump or snap?</td><td>Yes: <code>onLargeTransformJump</code> and <code>onLargeTransformJumpGlobal</code></td><td>No: the teleport threshold exists, but there is no event</td><td>Partial: <code>viewBufferTrimsTotal</code>, <code>viewBufferStarvedFramesTotal</code></td></tr>
+<tr><td>What is the latency or round-trip time?</td><td>Yes: <code>lastClientTickRTT</code>, <code>onTickRttDuration</code>. It is unreliable above about 166 ms (4.4)</td><td>Yes: <code>RoundTripTime</code>, <code>OnRoundTripTimeUpdated</code></td><td>Yes: <code>TickManager.rtt</code> in PurrNet core, and <code>lastInputSlackMs</code></td></tr>
+<tr><td>Are server states being lost or arriving out of order?</td><td>Partial: <code>onPacketLoss</code> (which mixes up upstream and downstream loss) and <code>oldServerTickCount</code>. The gap event never fires</td><td>No: old states are discarded silently</td><td>Partial: <code>framesReceivedTotal</code>, <code>fullFramesReceivedTotal</code>, <code>maxFrameApplyAgeFrames</code>, and reliable or full frame counts on the server</td></tr>
+<tr><td>Is the server getting good input (late, missing, buffered, invalid)?</td><td>Yes: per entity <code>invalidInputs</code>, <code>ticksWithoutInput</code>, <code>lateTickCount</code>, <code>inputJumps</code>, <code>catchupTicks</code>, <code>maxClientDelay</code>, <code>totalBufferingTicks</code>, <code>totalMissingInputTicks</code>, plus <code>potentialDesync</code> with a reason</td><td>No: the only response is a kick for too many replicates</td><td>Partial: input margin and slack, echoed per client. Rejected input is only logged</td></tr>
+<tr><td>Is the client&#39;s clock or lead right?</td><td>Partial: <code>maxServerDelay</code> and <code>GetServerDelay()</code> per entity. There is no lead control</td><td>Partial: <code>Tick</code> vs <code>LocalTick</code>. The adjusted delta is private</td><td>Yes: <code>leadJumpsTotal</code>, <code>leadPausesTotal</code>, <code>minLeadSnapsTotal</code>, <code>starvationJumpsTotal</code>, <code>currentTickPacingScale</code>, <code>smoothedInputSlackMs</code>, <code>currentSlackTargetMs</code></td></tr>
+<tr><td>How much bandwidth does prediction use?</td><td>No</td><td>Yes: <code>NetworkTrafficStatistics</code> per packet id and object, in development builds only</td><td>Yes: bits per delta section, frame byte totals, <code>inputBytesSentTotal</code>, <code>TickBandwidthProfiler</code> per type, and an editor profiler</td></tr>
+<tr><td>Has the simulation desynced?</td><td>Yes: the threshold decision itself, plus <code>potentialDesync</code> reasons on the client and server</td><td>No</td><td>Partial: hash detection for deterministic identities only. Nothing for Unity-physics identities</td></tr>
+<tr><td>Are there hooks for custom instrumentation?</td><td>Yes: 27 <code>SafeEventDispatcher</code>s</td><td>Yes: 8 reconcile and replay events, plus tick events</td><td>Yes: rollback and physics-pass events, desync events, virtual hooks</td></tr>
+<tr><td>Is there a per-entity breakdown?</td><td>Yes: counters on every <code>ClientPredictedEntity</code> and <code>ServerPredictedEntity</code></td><td>Partial: traffic per object, development builds only</td><td>Partial: bandwidth per type and reference</td></tr>
+<tr><td><strong>Score (out of 26)</strong></td><td><strong>21</strong></td><td><strong>10</strong></td><td><strong>17</strong></td></tr>
+</tbody></table></div>
+<h3 id="4-2-how-reliable-each-library-s-metrics-are">4.2 How reliable each library&#39;s metrics are</h3>
+<ul>
+<li><strong>Ursitoare</strong> has the widest coverage and the lowest reliability: 13 dead, unreachable or misleading items (4.4). Its RTT turns into &quot;seconds since startup&quot; once the server echo is more than 20 ticks old. Packet-loss counting can&#39;t tell lost inputs going up from lost states coming down. The error statistics are global across all entities, and the fields named <code>_avg*</code> hold sums.</li>
+<li><strong>FishNet</strong> has few metrics, and the ones it has are correct. Traffic statistics are compiled out of server builds and release builds (<code>F/Managing/Statistic/NetworkTrafficStatistics.cs:1,275-283</code>). Reconciles dropped by the frame-rate throttle aren&#39;t counted (<code>F/Managing/Prediction/PredictionManager.cs:640-641</code>).</li>
+<li><strong>PurrDiction</strong>: every <code>*Total</code> property and event checked was written somewhere (4.3). The counters are cumulative only, with no rate or window. <code>TickBandwidthProfiler</code> records on every write in every build, which costs a little at runtime (<code>P/Profiling/TickBandwidthProfiler.cs:20-38</code>). Of the three, its faults are the least likely to have been found (section 7).</li>
+</ul>
+<h3 id="4-3-full-catalogue">4.3 Full catalogue</h3>
+<p><strong>Ursitoare: counters, timings and state (all public fields)</strong></p>
+<ul>
+<li><code>PredictionManager</code> (<code>U/PredictionManager.cs:52-111</code>): <code>reportedServerTickId</code>, <code>totalResimulationsDueToAuthority</code>, <code>totalResimulationsDueToFollowers</code>, <code>totalResimulationsDueToBoth</code>, <code>totalResimulations</code>, <code>totalTickFreezes</code>, <code>totalResimulationSteps</code>, <code>totalDesyncToSnapCount</code>, <code>totalResimulationsTriggeredByLocalAuthority</code>, <code>totalResimulationsTriggeredByFollowers</code>, <code>totalResimulationsTriggeredByBoth</code>, <code>totalResimulationsSkipped</code>, <code>lastServerRecvIntervalDuration</code>, <code>lastClientTickRTT</code>, <code>lastInterTickDuration</code>, <code>lastTickDuration</code>, <code>resimSkipNotEnoughHistory</code>, <code>maxRewindDistance</code>, <code>totalRewindDistance</code>, <code>shouldResimThisTick</code>, <code>clientSendErrors</code>, <code>clientStatesReceived</code>, <code>GetAverageResimPerTick()</code>, <code>GetTotalTicks()</code>.</li>
+<li><code>ClientPredictedEntity</code> (<code>U/Components/Controllers/ClientPredictedEntity.cs:90-102</code>): <code>totalTicks</code>, <code>ticksAsFollower</code>, <code>ticksAsLocalAuthority</code>, <code>resimTicks</code>, <code>resimTicksAsAuthority</code>, <code>resimTicksAsFollower</code>, <code>maxServerDelay</code>, <code>resimChecksSkippedDueToLackOfServerData</code>, <code>resimChecksSkippedDueToServerAheadOfClient</code>, <code>lastSvTickId</code>, <code>oldServerTickCount</code>, <code>countMissingServerHistory</code>, <code>GetServerDelay()</code>.</li>
+<li><code>ServerPredictedEntity</code> (<code>U/Components/Controllers/ServerPredictedEntity.cs:49-58,315-316</code>): <code>invalidInputs</code>, <code>ticksWithoutInput</code>, <code>lateTickCount</code>, <code>totalSnapAheadCounter</code>, <code>inputJumps</code>, <code>catchupTicks</code>, <code>catchupBufferWipes</code>, <code>maxClientDelay</code>, <code>totalBufferingTicks</code>, <code>totalMissingInputTicks</code>, <code>clUpdateCount</code>, <code>clAddedUpdateCount</code>, <code>BufferFill()</code>, <code>BufferSize()</code>.</li>
+<li><code>SimpleConfigurableResimulationDecider</code> (<code>U/Resimulation/Detection/SimpleConfigurableResimulationDecider.cs:16-25</code>): <code>_avgDistD</code>, <code>_avgRotD</code>, <code>_avgVeloD</code>, <code>_avgAVeloD</code>, <code>_checkCount</code>, <code>_MaxDistD</code>, <code>_MaxRotD</code>, <code>_MaxVeloD</code>, <code>_MaxAVeloD</code>.</li>
+<li><code>PredictedEntityVisuals</code>: <code>GetInterpolationDistance()</code> (<code>:180</code>).</li>
+<li><code>PredictionBudgetTracker</code> (<code>U/Stats/PredictionBudgetTracker.cs</code>): tick and resimulation budget statistics, a rolling window, and <code>onResimulationSpike</code>. <strong>Nothing in the library, the demo or AntShipWars creates it.</strong></li>
+</ul>
+<p><strong>Ursitoare: events</strong></p>
+<ul>
+<li>Manager (<code>U/PredictionManager.cs:282-294</code>): <code>onPreTick</code>, <code>onPreResimTick</code>, <code>onPostTick</code>, <code>onPostResimTick</code>, <code>onTickStat</code>, <code>onTickRttDuration</code>, <code>onPacketLoss</code>, <code>onServerStateSendError</code>, <code>onClientStateSendError</code>, <code>resimulation</code>, <code>resimulationStep</code>, <code>onSnapToServer</code>.</li>
+<li>Client entity (<code>:609-620</code>): <code>newStateReached</code>, <code>newAuthoritativeStateReached</code>, <code>preSampleState</code>, <code>onReset</code>, <code>resimulation</code>, <code>resimulationStep</code>, <code>potentialDesync</code> (reasons MISSING_SERVER_COMPARISON, GAP_IN_SERVER_STREAM, SERVER_AHEAD_OF_CLIENT, SNAP_TO_SERVER_NO_DATA), <code>inputUsed</code>.</li>
+<li>Server entity (<code>:455-459</code>): <code>preSampleState</code>, <code>firstTickArrived</code>, <code>potentialDesync</code> (NO_INPUT_FOR_SERVER_TICK, INPUT_BUFFERED, INPUT_JUMP, MULTIPLE_INPUTS_PER_FRAME, INVALID_INPUT, LATE_TICK, TICK_OVERFLOW, CATCHUP), <code>stateSampled</code>, <code>inputReceived</code>.</li>
+<li>Visuals: <code>onLargeTransformJump</code>, <code>onLargeTransformJumpGlobal</code> (<code>U/Components/Controllers/PredictedEntityVisuals.cs:197-198</code>).</li>
+<li>Per-entity hooks: the four eligibility-check <code>Func</code>s (<code>ClientPredictedEntity.cs:31-58</code>).</li>
+<li>Logging switches: <code>DEBUG</code>, <code>LOG_TIMING</code>, <code>LOG_PRE_SIM_STATE</code>, <code>LOG_RESIMULATIONS</code>, <code>LOG_ALL_CHECKS</code>, <code>LOG_VELOCITIES</code>, <code>LOG_USED_INPUTS</code>, <code>SERVER_LOG_VELOCITIES</code>, <code>LOG_INPUT_QUEUE_SIZE</code>, <code>RewindablePhysicsController.LOG_STEP</code>.</li>
+<li>Profiler markers: none.</li>
+</ul>
+<p><strong>FishNet</strong></p>
+<ul>
+<li>Events on <code>PredictionManager</code> (<code>F/Managing/Prediction/PredictionManager.cs:168-224</code>): <code>OnPreReconcile</code>, <code>OnReconcile</code>, <code>OnPostReconcile</code>, <code>OnPrePhysicsTransformSync</code>, <code>OnPostPhysicsTransformSync</code>, <code>OnPreReplicateReplay</code>, <code>OnPostReplicateReplay</code>, and <code>OnReplicateReplay</code> (internal).</li>
+<li>State on <code>PredictionManager</code> (<code>:233-251</code>): <code>IsReconciling</code>, <code>ClientReplayTick</code>, <code>ServerReplayTick</code>, <code>ClientStateTick</code>, <code>ServerStateTick</code>.</li>
+<li>Per behaviour and per object: <code>IsBehaviourReconciling</code> (<code>F/Object/NetworkBehaviour/NetworkBehaviour.Prediction.cs:168</code>), <code>IsObjectReconciling</code> (<code>F/Object/NetworkObject/NetworkObject.Prediction.cs:78</code>).</li>
+<li>Per call: <code>ReplicateState</code> flags Ticked, Replayed and Created, with <code>IsFuture()</code> (<code>F/Object/Prediction/ReplicateState.cs:16-79</code>).</li>
+<li><code>TimeManager</code> (<code>F/Managing/Timing/TimeManager.cs:62-123</code>): <code>OnRoundTripTimeUpdated</code>, <code>OnPreTick</code>, <code>OnTick</code>, <code>OnPrePhysicsSimulation</code>, <code>OnPostPhysicsSimulation</code>, <code>OnPostTick</code>, <code>OnUpdate</code>, <code>OnLateUpdate</code>, <code>OnFixedUpdate</code>, <code>RoundTripTime</code>, <code>HalfRoundTripTime</code>, <code>LastPacketTick</code>.</li>
+<li><code>NetworkTrafficStatistics.OnNetworkTraffic</code>, per packet id: Replicate, Reconcile, StateUpdate, PingPong, TimingUpdate. Development builds only.</li>
+<li>33 profiler markers: 12 in <code>PredictionManager.cs:395-406</code>, 7 in <code>NetworkObject.Prediction.cs:229-235</code>, 11 in <code>TimeManager.cs:295-305</code>, and 3 in other files in scope.</li>
+<li>Kick reason <code>ExploitAttempt</code> for too many past replicates (<code>NetworkBehaviour.Prediction.cs:1027-1031</code>).</li>
+</ul>
+<p><strong>PurrDiction</strong></p>
+<ul>
+<li>Counters and values on <code>PredictionManager</code> (<code>P/Core/PredictionManager.cs</code>):<ul><li>Lead and pacing (2253-2302): <code>lastInputSlackMs</code>, <code>smoothedInputSlackMs</code>, <code>currentSlackTargetMs</code>, <code>currentTickPacingScale</code>, <code>hasInputSlackFeedback</code>, <code>leadJumpsTotal</code>, <code>leadPausesTotal</code>, <code>minLeadSnapsTotal</code>, <code>starvationJumpsTotal</code>.</li>
+<li>Input and frames sent (1323-1365): <code>lastMaxAckLagTicks</code>, <code>reliableFramesSentTotal</code>, <code>fullFramesSentTotal</code>, <code>suppressedTicksTotal</code>, <code>latchCyclesTotal</code>, <code>latchTicksTotal</code>, <code>maxLatchTicks</code>, <code>inputSendsTotal</code>, <code>inputBytesSentTotal</code>, <code>inputTicksSentTotal</code>, <code>deltaSection{Delete,Hierarchy,Input,State}BitsTotal</code>, <code>deltaFramesWrittenTotal</code>, <code>deltaFrameBytesTotal</code>, <code>maxDeltaFrameBytes</code>, <code>fullFrameBytesTotal</code>.</li>
+<li>Frames received and view (2056-2057, 2492-2521): <code>framesReceivedTotal</code>, <code>fullFramesReceivedTotal</code>, <code>viewBufferTrimsTotal</code>, <code>viewBufferStarvedFramesTotal</code>, <code>renderPhaseFrameAppliesTotal</code>, <code>tickPhaseFrameAppliesTotal</code>, <code>maxFrameApplyAgeFrames</code>.</li>
+<li>Other: <code>guaranteedInputHistorySystems</code> (959), <code>inputRedundancyTickCount</code> (965).</li>
+<li>State flags: <code>isReplaying</code>, <code>isVerified</code>, <code>isVerifiedAndReplaying</code>, <code>isCatchingUpFrames</code>, <code>isVerifiedView</code>, <code>isSimulating</code>, <code>isInPhysicsPass</code> (1893-1943).</li>
+</ul></li>
+<li>Events:<ul><li><code>onBeforePhysicsPass</code>, <code>onAfterPhysicsPass</code> (1957, 1971), <code>onStartingToRollback</code>, <code>onRollbackFinished</code> (2193-2194), <code>OnInstanceAdded</code> (32).</li>
+<li><code>onDesyncDetected</code>, <code>onLocalDesync</code> (<code>P/Core/PredictionManager.Desync.cs:18,26</code>).</li>
+<li><code>TickBandwidthProfiler.onTickEnded</code> with per-type <code>wroteStates</code>, <code>readStates</code>, <code>wroteInputs</code>, <code>readInputs</code> (<code>P/Profiling/TickBandwidthProfiler.cs</code>).</li>
+<li><code>PredictionHistoryTelemetry</code> with save counts (<code>P/Core/PredictionHistoryTelemetry.cs</code>).</li>
+<li>Physics callbacks on <code>PredictedRigidbody</code> (<code>P/UnityPhysics/PredictedRigidbody.cs:50-56</code>).</li>
+</ul></li>
+<li>Per-identity hook: <code>OnVerifiedStateReceived(tick, predicted, verified)</code> (<code>P/Core/PredictedIdentityStatefull.cs:548</code>).</li>
+<li>Profiler markers: 14 in the manager (68-81), 5 for visibility, <code>{Type}.Simulate</code> per identity type (<code>P/Core/PredictedIdentity.cs:20-29</code>), and <code>DeepCopy.*</code> per state type.</li>
+<li>Editor tools: an editor profiler window (<code>Editor/Profiler/PurrdictionProfiler.cs</code>).</li>
+</ul>
+<h3 id="4-4-metrics-that-are-declared-but-never-written-and-reasons-that-can-t-fire">4.4 Metrics that are declared but never written, and reasons that can&#39;t fire</h3>
+<p><strong>Ursitoare</strong></p>
+<div class="tw"><table><thead><tr><th>Item</th><th>Evidence</th><th>Status</th></tr></thead><tbody>
+<tr><td><code>totalDesyncToSnapCount</code></td><td><code>U/PredictionManager.cs:71</code>, the only reference</td><td>never written</td></tr>
+<tr><td><code>totalResimulationsTriggeredByLocalAuthority</code>, <code>...ByFollowers</code>, <code>...ByBoth</code></td><td><code>U/PredictionManager.cs:73-75</code>, only references</td><td>never written</td></tr>
+<tr><td><code>totalResimulationsDueToBoth</code></td><td><code>U/ClientPredictionManager.cs:361-371</code>: <code>totalResimulationDecisions</code> is only ever 0 or 1, so <code>&gt; 1</code> can&#39;t be true</td><td>unreachable</td></tr>
+<tr><td><code>GAP_IN_SERVER_STREAM</code></td><td><code>ClientPredictedEntity.cs:348</code> sets <code>lastCheckedServerTickId = serverState.tickId</code> before <code>:357</code> compares the two</td><td>can never fire</td></tr>
+<tr><td><code>MULTIPLE_INPUTS_PER_FRAME</code></td><td><code>ServerPredictedEntity.cs:146-156</code> counts stale inputs that were skipped, not inputs that were applied (the applied path breaks at <code>:133</code> before counting)</td><td>mislabeled</td></tr>
+<tr><td><code>CATCHUP</code> reason</td><td><code>ServerPredictedEntity.cs:219-223</code> fires on every server tick per entity, even when the catch-up count is 0</td><td>noise</td></tr>
+<tr><td><code>catchupBufferWipes</code></td><td><code>ServerPredictedEntity.cs:55</code>, only reference</td><td>never written</td></tr>
+<tr><td><code>totalSnapAheadCounter</code></td><td>written only in <code>SnapToLatest()</code> (<code>:410-414</code>), which nothing calls</td><td>unreachable</td></tr>
+<tr><td><code>ClientPredictedEntity.resimulation</code> event</td><td>declared at <code>:614</code>; the only <code>resimulation.Dispatch</code> calls are on the manager (<code>ClientPredictionManager.cs:444,506</code>)</td><td>never dispatched</td></tr>
+<tr><td><code>inputUsed</code> event</td><td><code>ClientPredictedEntity.cs:619-620</code> (with a &quot;TODO: fire this&quot;)</td><td>never dispatched</td></tr>
+<tr><td><code>inputReceived</code> event</td><td>dispatched only when <code>LOG_CLIENT_INUPTS</code> is set (<code>ServerPredictedEntity.cs:353-358</code>)</td><td>off by default</td></tr>
+<tr><td><code>TRACK_TIMING_STATS</code></td><td><code>U/PredictionManager.cs:30</code>, never read</td><td>dead switch</td></tr>
+<tr><td><code>PredictionBudgetTracker</code></td><td>not created anywhere</td><td>unwired</td></tr>
+<tr><td>Decider <code>_avg*</code> fields</td><td><code>SimpleConfigurableResimulationDecider.cs:55-58</code> keep sums and never divide</td><td>misnamed</td></tr>
+<tr><td><code>resimDesyncComparator.Check(...)</code></td><td>result thrown away (<code>ClientPredictedEntity.cs:550</code>)</td><td>no effect</td></tr>
+<tr><td>RTT measurement</td><td><code>ClientPredictionManager.cs:695-701</code>: <code>TickIndexedBuffer.Remove</code> returns <code>emptyValue</code> (sentTime 0) once the record has been evicted. The buffer holds 20 ticks (<code>PredictionManager.cs:35</code>), so at 120 Hz an echo more than about 166 ms old reports the time since startup</td><td>wrong values</td></tr>
+<tr><td>Packet-loss count</td><td><code>ClientPredictionManager.cs:673-684</code> counts gaps in the <em>echoed client tick</em>. Those gaps come from lost upstream inputs, not lost downstream states</td><td>misattributed</td></tr>
+</tbody></table></div>
+<p><strong>FishNet</strong></p>
+<ul>
+<li><code>PredictionManager.ReduceClientTiming</code> (<code>F/Managing/Prediction/PredictionManager.cs:229</code>) is never read or written.</li>
+<li><code>ClientReconcileThrottler</code> compares <code>Time.fixedUnscaledTime</code> (<code>:72</code>) with a value it stored from <code>Time.unscaledTime</code> (<code>:80</code>). The two time sources differ by up to one fixed step. This is minor.</li>
+</ul>
+<p><strong>PurrDiction</strong></p>
+<ul>
+<li>Every counter listed in 4.3 was traced to a write site, for example <code>ReportViewBufferTrim</code> at <code>DeterministicIdentity.cs:383</code> and <code>PredictedIdentityStatefull.cs:586</code>.</li>
+<li>No dead reason codes were found. Coverage of PurrDiction was lower than for the other two (section 7).</li>
+</ul>
+<h2 id="5-per-category-analysis">5. Per-category analysis</h2>
+<h3 id="5-0-the-core-loop-end-to-end">5.0 The core loop, end to end</h3>
+<div class="tw"><table><thead><tr><th>Stage</th><th>Ursitoare</th><th>FishNet</th><th>PurrDiction</th></tr></thead><tbody>
+<tr><td>Input sampling</td><td><code>PredictableControllableComponent.SampleInput</code> writes ordered float and bool slices (<code>U/Components/Controllers/AbstractPredictedEntity.cs:138-150</code>)</td><td>User <code>[Replicate]</code> method, data built in <code>OnTick</code> (<code>FD/PredictedPlayerController.cs:110-113</code>)</td><td><code>UpdateInput</code> every frame and <code>GetFinalInput</code> per tick (<code>PD/PredictedPlayerController.cs:38-59</code>)</td></tr>
+<tr><td>Sending</td><td>One unreliable message per tick per entity, with no redundancy (<code>U/ClientPredictionManager.cs:581-605</code>, <code>UD/NetworkPredictionManagerAdapter.cs:202-208</code>)</td><td>The last <code>RedundancyCount = StateInterpolation + 1</code> (3) replicates, sent only while input isn&#39;t default or the transform changes (<code>F/Object/NetworkBehaviour/NetworkBehaviour.Prediction.cs:565-586,878-911</code>)</td><td>All unacked ticks, capped at the redundancy window. Repeated inputs cost 1 bit, and resends run on a 20 ms timer (<code>P/Core/PredictionManager.cs:1016-1140,993-1014</code>)</td></tr>
+<tr><td>Server application</td><td><code>TickIndexedBuffer</code> per entity, startup buffering of 3, and catch-up that consumes extra inputs. A missing input re-applies the last loaded one (<code>U/Components/Controllers/ServerPredictedEntity.cs:93-166,206-259</code>)</td><td>Queue of at most 15 per object, start delay of <code>StateInterpolation</code>, default data when the queue is empty (<code>NetworkBehaviour.Prediction.cs:598-712,1141-1145</code>)</td><td>One input per tick, keyed by tick, window <code>[localTick, localTick+64]</code>. Missing inputs are extrapolated from the last one (<code>P/Core/PredictionManager.cs:901-915,3027-3039</code>, <code>:48</code>)</td></tr>
+<tr><td>State sending</td><td>Full state of every entity to every connection every tick, stamped with that connection&#39;s last applied client tick (<code>U/ServerPredictionManager.cs:98-128,327-348</code>)</td><td>Reconcile only while changing, written into a per-connection batch, one <code>StateUpdate</code> packet per tick (<code>NetworkBehaviour.Prediction.cs:374-459</code>, <code>F/Managing/Prediction/PredictionManager.cs:739-808</code>)</td><td>A delta frame per client against the frame that client acknowledged, bit-packed, with Fast compression, and reliable when it is a full frame or over the MTU (<code>P/Core/PredictionManager.cs:1160-1317,1754-1853,2041-2051</code>)</td></tr>
+<tr><td>Client decision to correct</td><td>Compares the latest server state with the local history at the same tick against thresholds, and takes the strongest decision across all entities (<code>U/ClientPredictionManager.cs:314-376</code>, <code>ClientPredictedEntity.cs:315-371</code>)</td><td><strong>Always</strong>, for the oldest queued state, unless the frame rate is low (<code>F/Managing/Prediction/PredictionManager.cs:549-734</code>)</td><td><strong>Always</strong>, for every queued server frame (<code>P/Core/PredictionManager.cs:2523-2624</code>)</td></tr>
+<tr><td>Rollback</td><td>Restores tracked bodies from the physics controller history, then snaps entities to server state, either all of them or only those that diverged (<code>U/ClientPredictionManager.cs:410-462</code>, <code>U/Simulation/RewindablePhysicsController.cs:101-111</code>)</td><td>The user&#39;s reconcile method applies the state. Objects without data are paused, made kinematic through <code>RigidbodyPauser</code> (<code>F/Object/NetworkObject/NetworkObject.Prediction.cs:448-471</code>)</td><td>Every identity reads its state record. Soft-correction identities are frozen instead (<code>P/Core/PredictionManager.cs:2111-2179,2747-2763</code>)</td></tr>
+<tr><td>Replay</td><td>Per tick: <code>PreResimulationStep</code> for every entity, a whole-scene <code>Physics.Simulate</code>, and an optional snap to server state again (<code>U/ClientPredictionManager.cs:465-503</code>)</td><td><code>OnReplicateReplay</code>, then <code>Physics.Simulate</code> for the whole scene, up to <code>LocalTick</code> (<code>F/Managing/Prediction/PredictionManager.cs:702-721</code>)</td><td><code>SimulateFrame</code> for the verified tick and then for each tick up to <code>localTick</code>, saving state again (<code>P/Core/PredictionManager.cs:2622-2623,2841-2952</code>)</td></tr>
+<tr><td>Visual smoothing</td><td>Detached visuals, a moving average of the last 4 states, then a lerp (section 5.19)</td><td><code>TransformTickSmoother</code> with interpolation for owner and spectators, adaptive interpolation, and a teleport threshold</td><td>A view buffer of at most 0.1 s, accumulated error correction with snap thresholds, and a soft-correction policy</td></tr>
+</tbody></table></div>
+<h3 id="5-1-performance-expected-cpu">5.1 Performance (expected CPU)</h3>
+<p>This section is inferred from data structures and control flow.</p>
+<p><strong>Ursitoare: rank 1.5</strong></p>
+<ul>
+<li>Replay happens only when a threshold is exceeded (<code>U/ClientPredictionManager.cs:380-408</code>). When predictions are right, the client does no replay work, which neither competitor offers.</li>
+<li>Every replay step is still a whole-scene <code>Physics.Simulate</code> (<code>U/Simulation/RewindablePhysicsController.cs:83-88</code>).</li>
+<li>As shipped it is slowed down by logging:<ul><li><code>LOG_ADDED_SERVER_STATES = true</code> logs every received state for every entity (<code>ClientPredictedEntity.cs:18,401-402</code>).</li>
+<li><code>LOG_RESIMULATION_STEPS = true</code> formats a 10-decimal state string per entity per replay step (<code>:26,554-557</code>).</li>
+<li><code>MovingAverageInterpolator.DEBUG</code> and <code>LOG_POS</code> default to true (<code>U/Interpolation/MovingAverageInterpolator.cs:16-17</code>).</li>
+<li><code>ApplyState</code> calls <code>PosAnalyser.LogAndPrintPosRot</code> with no condition, every frame, for every entity (<code>:154</code>).</li>
+<li>The demo also turns on <code>PredictionManager.DEBUG</code> (<code>UD/NetworkPredictionManagerAdapter.cs:62</code>).</li>
+</ul></li>
+<li>With logging off, it should be the cheapest on the client.</li>
+</ul>
+<p><strong>FishNet: rank 1.5</strong></p>
+<ul>
+<li>It reconciles and replays R ticks on <em>every</em> received state (<code>F/Managing/Prediction/PredictionManager.cs:549-734</code>), so client physics cost is about (R+1)&#215; that of a non-predicted client.</li>
+<li>Below 50 FPS it throttles reconciles to about 4 per second (<code>:59-84</code>).</li>
+<li>The rest is lean: pooled readers and writers (<code>:655-660</code>), profiler markers, and threaded tick smoothing (<code>F/Generated/Component/TickSmoothing/*.Threaded.cs</code>).</li>
+</ul>
+<p><strong>PurrDiction: rank 3</strong></p>
+<ul>
+<li>It rolls back and replays on every server frame, like FishNet. On top of that it runs <code>RunSaveState</code> for every identity at every replayed tick (<code>P/Core/PredictionManager.cs:2852-2867</code>), with deep copies (<code>P/Core/FULL_STATE.cs:13</code>).</li>
+<li>On the server it encodes a delta and a visibility projection per client and per identity every tick (<code>:1160-1317</code>).</li>
+<li><code>TickBandwidthProfiler</code> records on every write in every build (<code>P/Profiling/TickBandwidthProfiler.cs:20-38</code>).</li>
+</ul>
+<h3 id="5-2-computational-complexity">5.2 Computational complexity</h3>
+<p>Variables:</p>
+<ul>
+<li>E = predicted entities</li>
+<li>L = locally controlled entities</li>
+<li>P = bodies in the physics scene, including non-predicted ones</li>
+<li>S(P) = cost of one physics step</li>
+<li>R = replay length in ticks (about RTT plus buffering)</li>
+<li>C = connections</li>
+<li>H = history capacity per entity</li>
+</ul>
+<div class="tw"><table><thead><tr><th></th><th>Ursitoare</th><th>FishNet</th><th>PurrDiction</th></tr></thead><tbody>
+<tr><td>Client per tick, no correction</td><td>O(E&#183;L + E&#183;H)* + S(P)</td><td>O(R&#183;(E + S(P))), always</td><td>O(R&#183;(E&#183;s + S(P))), always (s = state copy size)</td></tr>
+<tr><td>Client per tick, with correction</td><td>O(R&#183;(E + S(P)) + P)</td><td>same</td><td>same, plus a gap catch-up O(G&#183;(E + S(P)))</td></tr>
+<tr><td>Server per tick</td><td>O(E) + S(P) + O(E&#183;C) separate sends</td><td>O(E) + S(P) + O(E&#183;C) buffer copies</td><td>O(E&#183;s) + S(P) + O(E&#183;C) delta encode and visibility</td></tr>
+<tr><td>Lookup structures</td><td><code>TickIndexedBuffer</code> is O(H) per eviction (<code>U/Utils/TickIndexedBuffer.cs:180-204</code>)</td><td>Replicate history O(1), O(H) brute force (<code>NetworkBehaviour.Prediction.cs:62-155</code>)</td><td>Ring buffers O(1) (<code>P/Core/History.cs</code>)</td></tr>
+</tbody></table></div>
+<p>* <code>ConfigureFollowerResimulation</code> loops over local entities for every entity (<code>U/ClientPredictionManager.cs:268-310</code>). When an entity&#39;s server buffer is full, every new state evicts with a scan of all keys.</p>
+<p>The expected client cost is ordered Ursitoare &lt; FishNet &lt; PurrDiction. Ursitoare is the only one where the R factor doesn&#39;t apply every tick.</p>
+<h3 id="5-3-memory-overhead">5.3 Memory overhead</h3>
+<p><strong>FishNet: rank 1</strong></p>
+<ul>
+<li>Ring buffers of 60 (<code>F/Plugins/GameKit/Dependencies/Utilities/Types/RingBuffer.cs:155</code>; wired in codegen <code>CodeGenerating/Processing/Prediction/PredictionProcessor.cs:512</code>).</li>
+<li>Server queue of at most 15 (<code>F/Managing/Prediction/PredictionManager.cs:343</code>).</li>
+<li>Pooled writers, readers, <code>StatePacket</code> objects and collections (<code>:118-161,851</code>).</li>
+<li>The only per-tick allocation in the reconcile path is a <code>LocalReconcile</code> struct holding a pooled writer (<code>NetworkBehaviour.Prediction.cs:1294-1297</code>).</li>
+</ul>
+<p><strong>PurrDiction: rank 2</strong></p>
+<ul>
+<li>Everything is bounded and pooled (<code>BitPackerPool</code>, <code>DisposableList</code>, <code>ListPool</code>), but large:<ul><li>State history of <code>tickRate*10</code>: 1,200 entries at 120 Hz (<code>P/Core/PredictedIdentityStatefull.cs:147</code>).</li>
+<li>A verified store of the same size (<code>P/Core/PredictionManager.cs:222</code>).</li>
+<li>Input history of <code>tickRate*5</code> (<code>P/Core/PredictedIdentityWithInput.cs:48</code>).</li>
+<li>A rigidbody verified history of <code>tickRate*10</code> (<code>P/UnityPhysics/PredictedRigidbody.cs:336</code>).</li>
+</ul></li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>Its footprint is small: buffers of <code>bufferSize</code> (50 in the demo, <code>UD/PredictedNetworkBehaviour.cs:16</code>) plus 120 per tracked body.</li>
+<li>But it has <strong>unbounded growth</strong>: <code>tickResimCounter</code> is a <code>Dictionary&lt;uint,uint&gt;</code> with one entry per resimulated tick, cleared only on <code>Reset()</code> (<code>ClientPredictedEntity.cs:84,534-535,589</code>).</li>
+<li>It <strong>leaks on the server</strong>: <code>RemovePredictedEntity</code> calls <code>SetEntityOwner(entity, invalidConnectionId)</code>, which returns early (<code>U/ServerPredictionManager.cs:150,248</code>). The entity stays in <code>_connIdToEntity</code>.</li>
+<li>It allocates every tick:<ul><li>2 &#215; <code>PhysicsStateRecord</code> per entity per tick in the interpolator (<code>MovingAverageInterpolator.cs:267,346</code>).</li>
+<li>A new record and arrays for every deserialized message.</li>
+<li>Interpolated log strings.</li>
+</ul></li>
+<li>There is no pooling.</li>
+</ul>
+<h3 id="5-4-bandwidth-efficiency">5.4 Bandwidth efficiency</h3>
+<p>This section is inferred from what the code writes.</p>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>Deltas against the frame the client acknowledged. An unchanged identity costs one <code>false</code> bit (<code>P/Core/PredictedIdentityStatefull.cs:424-446</code>).</li>
+<li>Bit packing and <code>CompressionLevel.Fast</code> (<code>P/Core/PredictionManager.cs:2041</code>).</li>
+<li>Full frames only when the client is distressed or the gap is longer than 8 s (<code>:1226-1242</code>).</li>
+<li>Input repeats cost 1 bit, and the redundancy window is sized from the input margin (<code>:945-951,1100-1117</code>).</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li>Reconciles are sent only while the input isn&#39;t default or the transform moved, plus a redundancy tail (<code>NetworkBehaviour.Prediction.cs:465-492,565-576</code>).</li>
+<li>Rotation is packed (<code>F/Generated/Component/Prediction/RigidbodyState.cs:76-89</code>), and states are batched into one packet per connection per tick.</li>
+<li>Delta serialization exists but is disabled. It sits behind <code>#if DO_NOT_USE</code>, and <code>GetDeltaSerializeOption()</code> always returns <code>FullSerialize</code> (<code>:851-873</code>).</li>
+<li>Inputs carry 3 redundant copies.</li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>It sends full <code>PhysicsStateRecord</code>s every tick, as separate RPCs, to every connection (<code>U/ServerPredictionManager.cs:327-348</code>).</li>
+<li>Each record is a tick plus three <code>Vector3</code>s and a <code>Quaternion</code>, about 56 bytes, plus the broadcast input and component-state arrays (<code>U/Data/PhysicsStateRecord.cs:10-17</code>), with no quantization.</li>
+<li>The batched world-state option is still full state (<code>U/Data/WorldStateRecord.cs</code>).</li>
+<li>Inputs are sent once, with no redundancy.</li>
+<li>At 120 Hz this is roughly 90–100 B &#215; 120 per entity per client, about 11–12 KB/s. This is an order-of-magnitude estimate.</li>
+</ul>
+<h3 id="5-5-architecture">5.5 Architecture</h3>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>It separates verified and speculative timelines, prediction policies per identity, modules, hierarchy, visibility and desync handling into partial files (<code>P/Core/PredictionManager.*.cs</code>).</li>
+<li>It has explicit controllers for client lead and pacing (<code>:2328-2434</code>).</li>
+<li>On the downside, the coordinator file is 3,419 lines and <code>PredictedHierarchy.cs</code> is 2,092.</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li>Prediction is consistent with the rest of FishNet. Codegen produces the replicate and reconcile plumbing, <code>TimeManager</code> drives the tick (<code>F/Managing/Timing/TimeManager.cs:688-779</code>), and events fan out to objects.</li>
+<li>It is tightly coupled. <code>PredictionManager</code> is <code>sealed</code>, and the reconcile-always policy is built in.</li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>It has a good separation: transport delegates, a <code>PhysicsController</code> interface, a decider interface, an interpolator interface, and separate client and server entities.</li>
+<li>But its configuration is <strong>global mutable static state</strong> spread over more than 40 <code>public static</code> fields in 6 classes, for example <code>U/PredictionManager.cs:15-44</code> and <code>ServerPredictedEntity.cs:13-28</code>.</li>
+<li><code>Instance</code> singletons are overwritten by every constructor (<code>U/PredictionManager.cs:115</code>, <code>ClientPredictionManager.cs:42</code>, <code>ServerPredictionManager.cs:48</code>).</li>
+<li>Some values are read only at construction time (<code>ServerPredictedEntity.cs:72</code>, <code>ClientPredictionManager.cs:126-127</code>).</li>
+</ul>
+<h3 id="5-6-developer-ergonomics">5.6 Developer ergonomics</h3>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>The player is 99 lines: an <code>INPUT</code> struct, a <code>STATE</code> struct, and <code>Simulate</code> (<code>PD/PredictedPlayerController.cs</code>).</li>
+<li>Balls only need a <code>PredictedRigidbody</code> and a prefab entry. Spawning is one call to <code>hierarchy.Create</code> (<code>PD/BallSpawner.cs:134</code>).</li>
+<li>One pitfall is silent: forces must go through <code>PredictedRigidbody</code>, not the <code>Rigidbody</code> (<code>PD/PredictedPlayerController.cs:70</code>).</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li>The player is 179 lines, plus two data structs and a 96-line ball script that sends a default replicate every tick (<code>FD/RigidbodySync.cs:297-301</code>).</li>
+<li>There are many concepts to learn: Replicate and Reconcile, <code>ReplicateState</code> and <code>IsFuture</code>, <code>CreateReconcile</code>, <code>PredictionRigidbody</code>, state forwarding and state order.</li>
+<li>Codegen catches signature mistakes. Using the <code>Rigidbody</code> directly instead of <code>PredictionRigidbody</code> fails silently.</li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>Integration needs a 460-line transport adapter, a 107-line entity wrapper, and two interfaces with 12 methods (<code>UD/</code>).</li>
+<li>Inputs are ordered float and bool slices whose read order has to match the write order exactly (<code>AbstractPredictedEntity.cs:548-555</code>).</li>
+<li>About a dozen switch combinations quietly turn off correction (5.15).</li>
+<li>The library&#39;s own self-review lists 13 conflicts (<code>C:\Development\Ursitoare\docs\configuration-conflicts.md</code>).</li>
+</ul>
+<h3 id="5-7-readability">5.7 Readability</h3>
+<p><strong>FishNet: rank 1.</strong> Comments explain the reasoning behind tricky scenarios, for example <code>F/Managing/Prediction/PredictionManager.cs:601-629</code>. 19% of lines are XML doc. The <code>#if DO_NOT_USE</code> blocks are noise.</p>
+<p><strong>Ursitoare: rank 2.5</strong></p>
+<ul>
+<li>It is the smallest codebase, and the whole loop fits in 4 files.</li>
+<li>But it has 98 TODO, FUDO and FODO comments, commented-out code, spelling mistakes in identifiers (<code>CanResiumlate</code>, <code>LOG_CLIENT_INUPTS</code>, <code>artifficialDelay</code>), mixed tabs and spaces (<code>ServerPredictedEntity.cs:88-150</code>), and no XML docs.</li>
+<li>Its external Markdown docs are good.</li>
+</ul>
+<p><strong>PurrDiction: rank 2.5.</strong> Names are clear, and logic is factored into small pure <code>internal static</code> helpers such as <code>ComputeTickPacingScale</code> (<code>:2312-2321</code>). The very large files and the depth of the concepts make it slow to read.</p>
+<h3 id="5-8-comprehensiveness">5.8 Comprehensiveness</h3>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>Predicted spawning and despawning, and hierarchy (<code>P/Hierarchy/</code>).</li>
+<li>Determinism tooling: fixed point, soft float, desync hash policies (<code>P/Core/DesyncPolicy.cs</code>).</li>
+<li>Predicted random, time and state machine.</li>
+<li>Prediction policies (<code>P/Core/PredictionPolicy.cs</code>) and soft correction.</li>
+<li>Lead and pacing control, physics events, interest management and visibility, and a profiler.</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li>Lag compensation (<code>F/Plugins/ColliderRollback/Scripts/RollbackManager.cs</code>) and predicted spawn (<code>F/Generated/Component/TakeOwnership/PredictedSpawn.cs</code>).</li>
+<li>Clock synchronization (<code>TimeManager.cs:1142-1228</code>) and tick smoothing.</li>
+<li>State order modes, local reconciles, and pausing rigidbodies that have no data.</li>
+<li>No determinism tooling.</li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>Rigidbody prediction, server input buffering and catch-up, follower prediction, and visuals.</li>
+<li>No predicted spawning, lag compensation, lead control or determinism tooling.</li>
+</ul>
+<h3 id="5-9-extensibility">5.9 Extensibility</h3>
+<p><strong>Ursitoare: rank 1.</strong> It is the only one whose <em>core algorithm</em> can be swapped:</p>
+<ul>
+<li>the correction decider (<code>SingleSnapshotInstanceResimChecker</code>, or the whole-history hook through <code>SetCustomEligibilityCheckHandler</code>, <code>ClientPredictedEntity.cs:140-162</code>)</li>
+<li>the physics backend (<code>PhysicsController</code>, 9 methods)</li>
+<li>the interpolator (<code>INTERPOLATION_PROVIDER</code>)</li>
+<li>the timer (<code>TIMER_PROVIDER</code>)</li>
+<li>the transport (constructor delegates)</li>
+<li>component state (<code>PredictableComponent.SampleComponentState</code> and <code>LoadComponentState</code>)</li>
+</ul>
+<p>The catch is that these plug-ins are global statics, copied when an entity registers.</p>
+<p><strong>PurrDiction: rank 2.</strong> Behaviour is extended through generic identities and modules with many virtual hooks. The rollback algorithm and the lead constants are fixed (<code>const</code>, <code>:2202-2222</code>).</p>
+<p><strong>FishNet: rank 3.</strong> The user owns the replicate and reconcile data and logic, and gets events. The manager is <code>sealed</code> and the reconcile policy is fixed.</p>
+<p>The detailed table of extension points is in 5.21.</p>
+<h3 id="5-10-resilience">5.10 Resilience</h3>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>Inputs are acknowledged, sent redundantly over a window, and resent every 20 ms (<code>P/Core/PredictionManager.cs:993-1014</code>).</li>
+<li>Missing inputs are extrapolated (<code>:48</code>).</li>
+<li>Frames are acknowledged against a baseline, recovery uses reliable full frames (<code>:1184-1242</code>), and gaps are caught up by replaying the inputs they contained (<code>:2117-2161</code>).</li>
+<li>The lead controller adapts to the input slack the server measures, and it has a starvation rescue (<code>:2339-2416,2591-2601</code>).</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li>3 redundant inputs, a server queue with a start delay, and clock correction every second, nudging the tick delta by &#177;1% (<code>TimeManager.cs:1130-1228</code>).</li>
+<li>Local reconciles fill in missing states (<code>NetworkBehaviour.Prediction.cs:1266-1298,1319-1382</code>).</li>
+<li>Reconciles are throttled when the frame rate is low.</li>
+<li>The 60-entry history is about 0.5 s at 120 Hz. Beyond that, replays find no input and skip the logic silently (<code>:759-775</code>). This is inferred.</li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>No input redundancy. A lost input makes the server re-apply the previous input, which guarantees a misprediction.</li>
+<li>No lead or clock control.</li>
+<li>RTT and gap detection are broken (4.4).</li>
+<li>Freeze-and-snap when local history is exceeded (<code>ClientPredictedEntity.cs:365-368</code>). But <code>ClientResimulationCheckPass</code> returns &quot;skip the simulation&quot;, and <code>Tick</code> ignores that return value (<code>U/ClientPredictionManager.cs:95</code>).</li>
+</ul>
+<h3 id="5-11-robustness">5.11 Robustness</h3>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>Every simulation phase is wrapped in try/catch with <code>LogException</code> (<code>P/Core/PredictionManager.cs:815-887</code>). One throwing identity skips the rest of that phase for that tick.</li>
+<li>It validates payload lengths when reading (<code>:1622-1628</code>). Malformed input and desync reports are swallowed without a log (<code>:3175-3178</code>, <code>PredictionManager.Desync.cs:84-87</code>).</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li>Interpolation is clamped and warned about in <code>OnValidate</code> (<code>F/Managing/Prediction/PredictionManager.cs:479-497</code>), and too many replicates gets the client kicked.</li>
+<li>There is no exception isolation; user exceptions propagate through the tick loop.</li>
+<li>Subscription leak: <code>InvokeStartCallbacks_Prediction</code> subscribes <code>TimeManager.OnUpdate</code> when <code>!asServer</code>, but <code>InvokeStopCallbacks_Prediction</code> returns early when <code>!asServer</code> and only unsubscribes as server (<code>F/Object/NetworkObject/NetworkObject.Prediction.cs:389-410</code>). This is a static reading. The likely effect is that client-only objects never unsubscribe.</li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>Constructors validate themselves (<code>INVALID_CONFIG</code> exceptions, <code>U/ClientPredictionManager.cs:49-78</code>). But <code>useServerWorldStateMessage</code> is a field that can only be set after construction, so the check at <code>U/ServerPredictionManager.cs:61-70</code> can&#39;t see it.</li>
+<li>Entity loops have no exception isolation; only sends are wrapped. Some exceptions are swallowed with <code>//TODO: event</code> (<code>U/ServerPredictionManager.cs:190-197</code>).</li>
+<li>Finalizers call <code>Debug.Log</code> (<code>ClientPredictedEntity.cs:104-107</code>, <code>ServerPredictedEntity.cs:60-63</code>).</li>
+<li><code>WrapperHelpers.GetComponents(controllable, predictable)</code> indexes the wrong array (<code>U/Wrappers/WrapperHelpers.cs:47-52</code>).</li>
+</ul>
+<h3 id="5-12-code-quality">5.12 Code quality</h3>
+<p><strong>PurrDiction: rank 1.</strong> Consistent style, pooled resources, and testable static helpers. Downsides are the very large files and catches that swallow errors silently.</p>
+<p><strong>FishNet: rank 2.</strong> Polished, but with dead <code>DO_NOT_USE</code> paths, a dead field, the inverted unsubscribe guard, and a time-source mix-up (4.4).</p>
+<p><strong>Ursitoare: rank 3.</strong> Dead switches (<code>APPLY_FORCES_TO_EACH_CATCHUP_INPUT</code>, <code>BUFFER_ONCE</code>, <code>TRACK_TIMING_STATS</code>), a distance calculation that always returns 0 (<code>(ent.position - ent.position)</code> at <code>U/ClientPredictionManager.cs:280</code>), reference aliasing of input records (5.15), and the issues in 4.4.</p>
+<h3 id="5-13-test-coverage">5.13 Test coverage</h3>
+<p><strong>Ursitoare: rank 1.</strong></p>
+<ul>
+<li>106 tests covering:<ul><li>buffers</li>
+<li>server buffering, catch-up and loss</li>
+<li>client resimulation and freezing</li>
+<li>followers</li>
+<li>ownership interop</li>
+<li>physics-controller rewind</li>
+</ul></li>
+<li>Some tests describe behaviour that isn&#39;t fixed yet, so they very likely fail at <code>f2168cd</code>. Two examples:<ul><li><code>GapInServerStreamIsReported</code> (<code>UT/components/ClientPredictedEntityTest.cs:414</code>) contradicts the code at <code>ClientPredictedEntity.cs:348-357</code>.</li>
+<li><code>TestIgnoredControllableFollowerIsSnappedInstead</code> is marked &quot;fails today&quot; by the library&#39;s own doc.</li>
+</ul></li>
+<li>This is inferred; the tests were not run.</li>
+</ul>
+<p><strong>FishNet, PurrDiction: rank 2.5 each.</strong> Neither ships tests. PurrDiction&#39;s <code>internal static</code> seams (<code>ShouldJumpForLowMargin</code>, <code>RequiresReliableRecovery</code>) suggest tests exist outside the package.</p>
+<h3 id="5-14-observability-and-debugging">5.14 Observability and debugging</h3>
+<p><strong>Ursitoare: rank 1</strong> on coverage, with 21 of 26 points. Reliability is the lowest of the three (4.2).</p>
+<p><strong>PurrDiction: rank 2</strong>, with 17 of 26. It is the best on network, lead and bandwidth telemetry, and every metric checked was live.</p>
+<p><strong>FishNet: rank 3</strong>, with 10 of 26. It has events and profiler markers but almost no counters, and its traffic statistics are for development builds only.</p>
+<h3 id="5-15-correctness-and-determinism-model">5.15 Correctness and determinism model</h3>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>Every frame rolls back to the server-verified timeline. Every identity is either restored, relayed as <code>ServerRelay</code>, or converged by soft correction.</li>
+<li>Soft correction is explicitly &quot;convergent rather than authoritative&quot; (<code>P/Core/PredictionPolicy.cs:268-278</code>).</li>
+<li>Deterministic identities get desync detection with Report, Resync or Correct (<code>PredictionManager.Desync.cs:91-140</code>). It uses a 16-bit hash, so false negatives are possible.</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li>Every received state is reconciled. Objects without data are paused, so no predicted object goes uncorrected.</li>
+<li>Reconciles are skipped silently while the frame rate is low.</li>
+<li>Bodies without <code>NetworkObject</code> prediction still get stepped during replays.</li>
+</ul>
+<p><strong>Ursitoare: rank 3.</strong> Several paths leave an entity <strong>with no correction at all</strong>:</p>
+<ul>
+<li>Library defaults ignore controllable followers&#39; requests (<code>IGNORE_CONTROLLABLE_FOLLOWER_DECISIONS = true</code>, <code>U/PredictionManager.cs:24</code>), while <code>predictAsFollower</code> is true, so those followers aren&#39;t snapped either (<code>ClientPredictedEntity.cs:218</code>, <code>ClientPredictionManager.cs:255-266,289-310</code>).</li>
+<li>Non-controllable followers (the balls) are never snapped for spectators (<code>ClientPredictedEntity.cs:210-250</code>).</li>
+<li>With <code>DO_RESIM = false</code>, or a resimulation blocked by the oversimulation guard, nothing replaces it: there is no fallback snap (<code>U/ClientPredictionManager.cs:384-391,410-413</code>).</li>
+</ul>
+<p>Input broadcast to followers is aliased:</p>
+<ul>
+<li><code>ServerPredictionManager.cs:110</code> replaces <code>state.input</code> with <code>GetLastInput()</code>.</li>
+<li>On the next tick, <code>SamplePhysicsState</code> re-samples the <em>server machine&#39;s</em> input into that same object (<code>ServerPredictedEntity.cs:275-280</code>).</li>
+<li>So on ticks without fresh client input, the server&#39;s own live input, read from the host keyboard in the demo (<code>UD/PredictablePlayerController.cs:64-73</code>), is sent out as the remote player&#39;s input.</li>
+</ul>
+<p>Rewind restores only tracked bodies, but replay steps the whole scene.</p>
+<h3 id="5-16-portability-and-lock-in">5.16 Portability and lock-in</h3>
+<p><strong>Ursitoare: rank 1.</strong> It depends only on Unity physics and <code>sector0.safe-event-dispatcher</code> (<code>package.json</code>). Transport is plain delegates.</p>
+<p><strong>FishNet, PurrDiction: rank 2.5 each.</strong> Each works only inside its own networking stack. PurrDiction&#39;s fixed-point and soft-float code could be reused elsewhere.</p>
+<h3 id="5-17-maturity-and-ecosystem">5.17 Maturity and ecosystem</h3>
+<p><strong>FishNet: rank 1.</strong> Version 4.x, wide adoption, documentation site and Discord.</p>
+<p><strong>PurrDiction: rank 2.</strong> Version 1.3.3, on a beta PurrNet.</p>
+<p><strong>Ursitoare: rank 3.</strong> Version 1.0.0 with placeholder package metadata, one production user (AntShipWars), and 171 commits.</p>
+<h3 id="5-18-security-against-client-cheating-added-category">5.18 Security against client cheating (added category)</h3>
+<p><strong>FishNet: rank 1.5.</strong> Owner check, a kick when more than <code>RedundancyCount</code> replicates arrive, a queue cap with <code>DropExcessiveReplicates = true</code>, and one input consumed per tick (<code>NetworkBehaviour.Prediction.cs:1017-1031,673-685</code>).</p>
+<p><strong>PurrDiction: rank 1.5.</strong> Owner check per input entry (<code>P/Core/PredictionManager.cs:3162</code>). Inputs are keyed by tick inside a window and consumed once per tick (<code>:3031-3034,905-910</code>), which rules out speed hacks. It never kicks.</p>
+<p><strong>Ursitoare: rank 3.</strong></p>
+<ul>
+<li>It has an owner check (<code>U/ServerPredictionManager.cs:314-319</code>) and a <code>ValidateInput</code> hook, but the demo&#39;s hook returns <code>true</code>.</li>
+<li>Catch-up consumes several inputs per tick when the queue grows (<code>ServerPredictedEntity.cs:217-231</code>). A client sending ahead gets extra simulation, so a bounded speed hack is possible.</li>
+<li>It never kicks.</li>
+</ul>
+<h3 id="5-19-visual-interpolation-and-smoothing-added-at-the-user-s-request">5.19 Visual interpolation and smoothing (added at the user&#39;s request)</h3>
+<p><strong>PurrDiction: rank 1</strong></p>
+<ul>
+<li>Each identity keeps a view interpolation buffer of at most <code>max(3, tickRate &#215; 0.1 s)</code> entries. It trims when over and holds when starved, and both cases are counted (<code>P/Core/PredictionManager.cs:2476-2503</code>, <code>P/Core/PredictedIdentityStatefull.cs:572-604</code>).</li>
+<li>Correction errors are <em>accumulated</em> and bled off at a rate that varies between a minimum and maximum, with separate thresholds for position and rotation snaps (<code>P/Transform/PredictedTransform.cs:524-620</code>).</li>
+<li><code>SoftCorrection</code> blends errors exponentially, with a snap threshold (<code>P/Core/PredictionPolicy.cs:221-241</code>, <code>PredictedTransform.cs:452-472</code>).</li>
+<li><code>Interpolate</code> can be overridden per state (<code>PredictedIdentityStatefull.cs:617-622</code>), and <code>UpdateViewMode</code> chooses Update or LateUpdate.</li>
+</ul>
+<p><strong>FishNet: rank 2</strong></p>
+<ul>
+<li><code>TransformTickSmoother</code> on a graphical child object, with optional detach.</li>
+<li>Owner interpolation defaults to 1 tick and spectator interpolation to 2. Adaptive interpolation scales with latency.</li>
+<li>Smoothed properties can be chosen per axis, there is a teleport threshold, and a threaded implementation exists (<code>F/Object/NetworkObject/NetworkObject.Prediction.cs:119-205,354-361</code>, <code>F/Generated/Component/TickSmoothing/</code>).</li>
+<li>It smooths only between tick results; there is no separate error-decay model.</li>
+</ul>
+<p><strong>Ursitoare: rank 3</strong></p>
+<ul>
+<li>Visuals are detached (<code>U/Components/Controllers/PredictedEntityVisuals.cs:40-45</code>). A moving average over the last 4 states (<code>FOLLOWER_SMOOTH_WINDOW</code>, <code>MovingAverageInterpolator.cs:20,344-374</code>) feeds a lerp. Owner and followers use the same window (<code>:387-402</code>).</li>
+<li>That adds about 2–3 ticks of visual delay even for the local player. Rotations are averaged with <code>QuaternionAverage</code>.</li>
+<li>The code says &quot;NOTE: this is broken, interpolation time is somehow always ahead of the god damned buffer&quot; (<code>:187</code>).</li>
+<li><code>Reset()</code> doesn&#39;t clear <code>averagedBuffer</code> (<code>:381-385</code>).</li>
+<li>Logs that can&#39;t be turned off fire on starvation and late adds (<code>:87,231,262</code>).</li>
+<li>Its strong point is jump detection, through <code>onLargeTransformJump</code>. AntShipWars swaps in its own <code>VisualsSnapshotInterpolator</code> and an EMA variant, which shows the provider interface works.</li>
+</ul>
+<h3 id="5-20-movement-from-several-components-each-with-its-own-input-added-at-the-user-s-request">5.20 Movement from several components, each with its own input (added at the user&#39;s request)</h3>
+<p><strong>PurrDiction: rank 1, easiest</strong></p>
+<ul>
+<li>Each component is its own <code>PredictedIdentity&lt;INPUT, STATE&gt;</code> with a typed input and state.</li>
+<li><code>RegisterInstance</code> gives <em>every</em> <code>PredictedIdentity</code> on a GameObject its own <code>PredictedComponentID(objectId, index)</code> (<code>P/Core/PredictionManager.cs:473-504</code>).</li>
+<li>On upload, each owned identity writes its own input span, and unchanged spans cost a 1-bit repeat (<code>:1077-1118</code>). On the server, inputs are routed per component id with an ownership check (<code>:3151-3172</code>).</li>
+<li>Components share the body through <code>PredictedRigidbody</code>.</li>
+<li><code>PredictedModule</code> gives finer-grained composition (<code>P/Core/PredictedModule.cs</code>, <code>PredictedIdentity.Module.cs</code>).</li>
+<li>Pitfall: execution order between components follows registration order.</li>
+</ul>
+<p><strong>Ursitoare: rank 2, native but untyped</strong></p>
+<ul>
+<li>It is designed for this. An entity aggregates any number of <code>PredictableControllableComponent</code>s, sums their declared float and bool counts (<code>AbstractPredictedEntity.cs:36-40</code>), and samples, validates and loads each slice in array order (<code>:72-96,138-150</code>). Components can also carry state (<code>PredictableComponent.SampleComponentState</code> and <code>LoadComponentState</code>, <code>:114-136</code>).</li>
+<li>But there is a single record per entity, sent whole every tick. Only floats and bools are supported. Sample and load order must match exactly (&quot;critical!&quot;, <code>:548</code>).</li>
+<li>There is no versioning (&quot;TODO: what about adding &amp; removing components?&quot;, <code>:553-554</code>). The helper that merges component lists has an indexing bug (<code>U/Wrappers/WrapperHelpers.cs:47-52</code>).</li>
+</ul>
+<p><strong>FishNet: rank 3, possible but manual</strong></p>
+<ul>
+<li>Each <code>NetworkBehaviour</code> may declare its own <code>[Replicate]</code> and <code>[Reconcile]</code>. <code>NetworkObject</code> collects every behaviour that uses prediction (<code>F/Object/NetworkObject/NetworkObject.Prediction.cs:257-263,599-606</code>) and replays them all (<code>:587-590</code>).</li>
+<li>But each behaviour sends its own replicate RPC with its own redundancy counter (<code>NetworkBehaviour.Prediction.cs:195-199,578-586</code>), so there is more overhead per component.</li>
+<li>Order between behaviours depends on the order of <code>TimeManager.OnTick</code> subscriptions.</li>
+<li>Behaviours that share a body must share one <code>PredictionRigidbody</code>, and exactly one of them should reconcile it. Otherwise the rigidbody is restored twice and forces applied from other behaviours are lost. This is inferred from <code>PredictionRigidbody.Reconcile</code> and the serializer, which no longer writes pending forces (<code>F/Object/Prediction/PredictionRigidbody.cs:105-111</code>).</li>
+<li>The usual workaround is to merge all inputs into one replicate struct on one behaviour, which defeats separate inputs.</li>
+</ul>
+<h3 id="5-21-extension-options-in-detail-added-at-the-user-s-request">5.21 Extension options in detail (added at the user&#39;s request)</h3>
+<div class="tw"><table><thead><tr><th>Extension point</th><th>Ursitoare</th><th>FishNet</th><th>PurrDiction</th></tr></thead><tbody>
+<tr><td>Transport</td><td>Any: 5 delegates (<code>U/ClientPredictionManager.cs:35-46</code>, <code>U/ServerPredictionManager.cs:35-49</code>)</td><td>FishNet transports only</td><td>PurrNet transports only</td></tr>
+<tr><td>Physics backend</td><td><code>PhysicsController</code> interface: Rewindable, Simple, Kinematic, Scene stub (<code>U/Simulation/</code>)</td><td><code>PhysicsMode</code> Unity, TimeManager or Disabled, plus pre/post physics events</td><td><code>PredictionPhysicsProvider</code> flags (3D/2D) and <code>onBefore/AfterPhysicsPass</code>. A custom provider would need a deterministic identity</td></tr>
+<tr><td>Correction decision</td><td>Pluggable globally and per entity (5.9)</td><td>Not pluggable; always reconciles</td><td>Not pluggable. Per-identity <code>PredictionPolicy</code> chooses the mode</td></tr>
+<tr><td>Visual interpolation</td><td><code>VisualsInterpolationsProvider</code> (5 methods), chosen through <code>INTERPOLATION_PROVIDER</code></td><td>Tick smoother settings. You can provide your own graphical object or turn smoothing off</td><td>Override <code>Interpolate</code>, <code>UpdateView</code>, <code>LateUpdateView</code>, <code>ViewStart</code>, <code>ModifyRollbackViewState</code>; interpolation settings assets</td></tr>
+<tr><td>Custom state</td><td><code>PredictableComponent</code> float and bool slices</td><td>Any serializable reconcile struct, with custom serializers</td><td>Any <code>IPredictedData&lt;T&gt;</code> struct, with <code>ReadDeltaState</code>/<code>WriteDeltaState</code> overrides and custom packers</td></tr>
+<tr><td>Input shaping</td><td><code>ValidateInput</code> per component</td><td>User code in the replicate method</td><td><code>GetFinalInput</code>, <code>UpdateInput</code>, <code>ModifyExtrapolatedInput</code>, input sanitizing (<code>DeterministicIdentityWithInput.cs:253</code>)</td></tr>
+<tr><td>Lifecycle hooks</td><td>27 events (4.3)</td><td>8 reconcile and replay events, plus tick events</td><td>Rollback, physics and desync events, plus 42 virtual or abstract identity hooks</td></tr>
+<tr><td>Limits</td><td>Plug-ins are global statics copied at registration</td><td>Sealed manager, internal replay event</td><td>Constants for lead and pacing, rollback algorithm fixed</td></tr>
+</tbody></table></div>
+<h2 id="6-which-to-pick">6. Which to pick</h2>
+<div class="tw"><table><thead><tr><th>Use case</th><th>Pick</th><th>Why</th></tr></thead><tbody>
+<tr><td>A new physics-heavy multiplayer game on PurrNet, or open to switching stacks</td><td><strong>PurrDiction</strong></td><td>Best bandwidth, resilience and correctness model, and least integration code. Budget CPU for rolling back every frame</td></tr>
+<tr><td>A team already on FishNet, or one that needs lag compensation and a mature ecosystem</td><td><strong>FishNet</strong></td><td>Stable, pooled, documented. Add your own error and correction metrics, because the library has none</td></tr>
+<tr><td>You must stay on Mirror or a custom transport, or you need your own correction policy</td><td><strong>Ursitoare</strong>, after fixes</td><td>The only transport-agnostic option with pluggable correction. Before shipping, turn off the default logs, add input redundancy, and fix the items in 4.4 and 5.15</td></tr>
+<tr><td>Deterministic lockstep-like logic: RTS, fighting games, fixed-point simulation</td><td><strong>PurrDiction</strong></td><td>Fixed point, soft float and desync hashing</td></tr>
+<tr><td>Many movement components per object, each with its own input</td><td><strong>PurrDiction</strong> (or Ursitoare)</td><td>Typed input per component. Ursitoare supports it natively but untyped</td></tr>
+<tr><td>Low CPU budget clients (mobile) with mostly correct predictions</td><td><strong>Ursitoare</strong> (algorithm) or <strong>FishNet</strong> (as shipped)</td><td>Conditional replay versus replaying every tick. Ursitoare needs its logging removed first</td></tr>
+<tr><td>Strong anti-cheat on input timing</td><td><strong>FishNet</strong> or <strong>PurrDiction</strong></td><td>Tick-keyed consumption, kicks or windows</td></tr>
+</tbody></table></div>
+<h2 id="7-method-and-caveats">7. Method and caveats</h2>
+<p><strong>Measured vs inferred</strong></p>
+<ul>
+<li><em>Measured</em> items were counted or read directly: line and file counts, <code>///</code> counts, TODOs, catches, markers, tests, whether each metric is written, the cited code paths.</li>
+<li>Everything about performance, memory footprint, bandwidth, resilience and runtime effects is <em>inferred</em> from data structures and control flow. Unity was not run, and no test was executed.</li>
+</ul>
+<p><strong>Review bias</strong></p>
+<ul>
+<li>I traced <strong>Ursitoare</strong> almost line by line. It is the smallest codebase, at about 5.7k runtime lines.</li>
+<li>I read the <strong>FishNet</strong> prediction core in full: <code>PredictionManager</code>, <code>NetworkBehaviour.Prediction</code>, <code>NetworkObject.Prediction</code> and the relevant <code>TimeManager</code> sections. I sampled the tick smoother and codegen.</li>
+<li>For <strong>PurrDiction</strong> (about 16k core lines plus 11k for determinism and hierarchy) I read the manager&#39;s tick, upload, frame and rollback, and lead paths, plus selected identity, transform and telemetry code.</li>
+<li>Its faults are therefore <strong>the most likely to be under-found</strong>, and FishNet&#39;s next. The robustness, code-quality and correctness ranks for PurrDiction carry the most uncertainty.</li>
+<li>Ursitoare also ships a frank self-review (<code>docs/configuration-conflicts.md</code>). I checked every item I cite from it against the code.</li>
+<li>One of its claims, #4, is only partly right. The manager overwrites <code>state.input</code> with the applied input (<code>U/ServerPredictionManager.cs:110</code>). The leak happens through object aliasing on ticks with no new input, as described in 5.15.</li>
+</ul>
+<p><strong>Other caveats</strong></p>
+<ul>
+<li><strong>Scope of line counts:</strong> FishNet&#39;s prediction lives inside a larger framework, so its counts cover the listed prediction folders only. PurrDiction&#39;s counts include its determinism libraries.</li>
+<li><strong>Configuration sensitivity:</strong> Ursitoare&#39;s CPU rank assumes its default logging is turned off. As shipped, its client cost is dominated by <code>Debug.Log</code>.</li>
+<li><strong>Tie rule:</strong> ties share the average rank, and the overall verdict uses an unweighted mean. With weights that favor CPU, FishNet moves up. With weights that favor network quality, PurrDiction&#39;s lead grows.</li>
+</ul>
+<h2 id="appendix-evidence-behind-each-ranking">Appendix: evidence behind each ranking</h2>
+<p>Every row cites code as <code>file:line</code>, using the prefixes defined at the top. Code was read at the stated versions.</p>
+<div class="tw"><table><thead><tr><th>Category</th><th>Key evidence</th></tr></thead><tbody>
+<tr><td>Performance</td><td>Conditional resimulation: <code>U/ClientPredictionManager.cs:380-408</code>. Always reconcile: <code>F/Managing/Prediction/PredictionManager.cs:549-734</code>, <code>P/Core/PredictionManager.cs:2523-2624</code>. Default logs: <code>U/Components/Controllers/ClientPredictedEntity.cs:18,26,401-402,554-557</code>, <code>U/Interpolation/MovingAverageInterpolator.cs:16-17,154</code>, <code>UD/NetworkPredictionManagerAdapter.cs:62</code>. Save state on every replay step: <code>P/Core/PredictionManager.cs:2852-2867</code>. Throttle: <code>F/Managing/Prediction/PredictionManager.cs:59-84,640</code></td></tr>
+<tr><td>Complexity</td><td>Follower loop: <code>U/ClientPredictionManager.cs:268-310,322-376</code>. O(H) eviction: <code>U/Utils/TickIndexedBuffer.cs:24-43,180-204</code>. Replay loops: <code>U/ClientPredictionManager.cs:465-503</code>, <code>F/Managing/Prediction/PredictionManager.cs:702-721</code>, <code>P/Core/PredictionManager.cs:2833-2839</code>. Server encode per client: <code>P/Core/PredictionManager.cs:1166-1314</code></td></tr>
+<tr><td>Memory</td><td>Unbounded dictionary: <code>ClientPredictedEntity.cs:84,534-535</code>. Ownership leak: <code>U/ServerPredictionManager.cs:150,248</code>. Interpolator allocations: <code>MovingAverageInterpolator.cs:267,346</code>. FishNet capacity 60: <code>RingBuffer.cs:155</code>, <code>PredictionProcessor.cs:512</code>. PurrDiction histories: <code>PredictedIdentityStatefull.cs:147</code>, <code>PredictionManager.cs:222</code>, <code>PredictedIdentityWithInput.cs:48</code></td></tr>
+<tr><td>Bandwidth</td><td>Full per-entity sends: <code>U/ServerPredictionManager.cs:98-128,327-348</code>, <code>U/Data/PhysicsStateRecord.cs:10-17</code>. FishNet send-on-change: <code>NetworkBehaviour.Prediction.cs:465-492,565-586</code>. Delta disabled: <code>:409-413,851-873</code>. Rotation packing: <code>RigidbodyState.cs:76-89</code>. PurrDiction delta and bit: <code>PredictedIdentityStatefull.cs:424-446</code>. Compression: <code>PredictionManager.cs:2041</code>. Input repeat: <code>:1100-1117</code></td></tr>
+<tr><td>Architecture</td><td>Statics and singletons: <code>U/PredictionManager.cs:15-44,115</code>, <code>ServerPredictedEntity.cs:13-28,72</code>. FishNet sealed manager: <code>F/Managing/Prediction/PredictionManager.cs:26</code>. Tick: <code>TimeManager.cs:688-779</code>. PurrDiction partials and controllers: <code>P/Core/PredictionManager.cs:2328-2434</code></td></tr>
+<tr><td>Ergonomics</td><td>Demo sizes in section 3. <code>PD/PredictedPlayerController.cs</code>, <code>PD/BallSpawner.cs:134</code>. <code>FD/PredictedPlayerController.cs</code>, <code>FD/RigidbodySync.cs:297-301</code>. <code>UD/NetworkPredictionManagerAdapter.cs</code>, <code>UD/PredictablePlayerController.cs</code>, <code>AbstractPredictedEntity.cs:548-555</code></td></tr>
+<tr><td>Readability</td><td>XML and TODO counts in section 3. Typos: <code>U/ClientPredictionManager.cs:558</code>, <code>ServerPredictedEntity.cs:21</code>, <code>PredictedEntityVisuals.cs:36</code>. FishNet explanatory comments: <code>F/Managing/Prediction/PredictionManager.cs:601-629</code></td></tr>
+<tr><td>Comprehensiveness</td><td><code>P/Hierarchy/</code>, <code>P/Core/DesyncPolicy.cs</code>, <code>P/Core/PredictionPolicy.cs</code>, <code>P/FixedPoint/</code>, <code>P/SoftFloat/</code>. <code>F/Plugins/ColliderRollback/Scripts/RollbackManager.cs:23</code>, <code>F/Generated/Component/TakeOwnership/PredictedSpawn.cs</code></td></tr>
+<tr><td>Extensibility</td><td>Table 5.21. <code>ClientPredictedEntity.cs:140-162</code>, <code>U/Simulation/PhysicsController.cs:9-20</code>, <code>U/PredictionManager.cs:39-42</code>. <code>P/Core/PredictionManager.cs:2202-2222</code></td></tr>
+<tr><td>Resilience</td><td>Upload and resend: <code>P/Core/PredictionManager.cs:993-1140</code>. Gap catch-up: <code>:2117-2161</code>. Lead: <code>:2339-2416,2591-2620</code>. FishNet redundancy and clock: <code>NetworkBehaviour.Prediction.cs:878-911</code>, <code>TimeManager.cs:1130-1228</code>. Ignored freeze result: <code>U/ClientPredictionManager.cs:95,380-408</code></td></tr>
+<tr><td>Robustness</td><td>Phase catches: <code>P/Core/PredictionManager.cs:815-887,3175-3178</code>. FishNet <code>OnValidate</code> and kick: <code>F/Managing/Prediction/PredictionManager.cs:479-497</code>, <code>NetworkBehaviour.Prediction.cs:1027-1031</code>. Leak: <code>NetworkObject.Prediction.cs:389-410</code>. Ursitoare: <code>U/ServerPredictionManager.cs:46,61-70,190-197</code>, <code>U/Wrappers/WrapperHelpers.cs:47-52</code></td></tr>
+<tr><td>Code quality</td><td>Zero distance: <code>U/ClientPredictionManager.cs:280</code>. Dead switches: <code>ServerPredictedEntity.cs:14,16</code>, <code>U/PredictionManager.cs:30</code>. FishNet dead field: <code>F/Managing/Prediction/PredictionManager.cs:229</code></td></tr>
+<tr><td>Tests</td><td>106 <code>[Test]</code> attributes in <code>UT/</code>. No NUnit references in FishNet&#39;s or PurrDiction&#39;s prediction packages</td></tr>
+<tr><td>Observability</td><td>Section 4</td></tr>
+<tr><td>Correctness</td><td><code>U/PredictionManager.cs:24</code>, <code>ClientPredictedEntity.cs:210-250</code>, <code>U/ClientPredictionManager.cs:255-266,289-310,384-413</code>. Aliasing: <code>U/ServerPredictionManager.cs:109-110</code>, <code>ServerPredictedEntity.cs:183,275-280</code>, <code>UD/PredictablePlayerController.cs:64-73</code>. FishNet pauser: <code>NetworkObject.Prediction.cs:462-469</code>. PurrDiction policies: <code>PredictionPolicy.cs:252-298</code>, <code>PredictionManager.Desync.cs:91-140</code></td></tr>
+<tr><td>Portability</td><td>Ursitoare <code>package.json</code> dependencies. Delegates: <code>U/ClientPredictionManager.cs:35-46</code></td></tr>
+<tr><td>Maturity</td><td><code>package.json</code> versions: FishNet 4.7.3, PurrDiction 1.3.3, Ursitoare 1.0.0 with <code>todo@example.com</code>. 171 commits in Ursitoare&#39;s git log</td></tr>
+<tr><td>Security</td><td><code>NetworkBehaviour.Prediction.cs:1017-1031,673-685</code>. <code>P/Core/PredictionManager.cs:3031-3034,3162</code>. <code>U/ServerPredictionManager.cs:314-319</code>, <code>ServerPredictedEntity.cs:217-231</code>, <code>UD/PredictablePlayerController.cs:75-78</code></td></tr>
+<tr><td>Visual interpolation</td><td>Section 5.19 citations</td></tr>
+<tr><td>Multi-component input</td><td>Section 5.20 citations</td></tr>
+</tbody></table></div>
+
+</main>
+</body>
+</html>
