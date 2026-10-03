@@ -678,9 +678,32 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  hasClientPredManager: 0
+  hasServerPredManager: 0
   latencySimulation: {fileID: 0}
   useUpdateLoop: 0
   useGameTime: 0
+  InvalidConnectionId: -1
+  ServerConnectionId: 0
+  config:
+    SimulationHz: 120
+    RenderingHz: 120
+    NetworkHz: 60
+    server_use_buffering: 1
+    server_buffer_size: 5
+    server_catchup: 1
+    server_catchup_sections: 10
+    server_increment_ticks: 0
+    resimulate: 1
+    snap: 0
+    oversim_protect: 0
+    oversim_protect_with_tick_interval: 1
+    oversim_min_ticks_between: 5
+    max_tick_resim_count: 1
+    dist_tres: 0.01
+    rot_tres: 0.01
+    velo_tres: 0.01
+    avelo_tres: 0.01
 --- !u!114 &1615054617
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1401,8 +1424,8 @@ SceneRoots:
   m_Roots:
   - {fileID: 450435651}
   - {fileID: 1710210935}
+  - {fileID: 2114847167}
+  - {fileID: 1615054615}
   - {fileID: 721566609}
   - {fileID: 1789128862}
   - {fileID: 390979511}
-  - {fileID: 2114847167}
-  - {fileID: 1615054615}
