@@ -214,7 +214,7 @@
       "dependencies": {
         "sector0.safe-event-dispatcher": "1.0.0"
       },
-      "hash": "e7f6ee2bdb9ab64200e291dcd9b72c5c4b537ba6"
+      "hash": "b5ee85d3f8ac0ab8ea9ecbca573a20f3ca818a2c"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
