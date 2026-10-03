@@ -12,7 +12,7 @@ Every project contains the same `Gameplay` scene: an arena with obstacles and a 
 | Up / Down arrows | Throttle forward / backward |
 | Left / Right arrows | Steer |
 | Space | Boost |
-| B (server) | Spawn a ball (FishNet, Mirror and PurrNet; the Ursitoare project has the ball prefab but no spawner yet) |
+| B (server) | Spawn a ball |
 
 The player is a Rigidbody driven only by forces: rotation power 10, throttle 10, boost 50, mass 1. Balls have mass 0.1 and no controller; they move only through physics and collisions.
 

@@ -29,5 +29,17 @@ namespace DefaultNamespace
         public float rot_tres = 0.01f;
         public float velo_tres = 0.01f;
         public float avelo_tres = 0.01f;
+
+        //FOLLOWERS (entities not controlled by this client: other players, balls)
+        //NOTE: library default ignores resim decisions of controllable followers, so other players drift until the local entity triggers a resim.
+        public bool resim_ignore_follower_decisions = false;
+        public bool ignore_non_auth_resim_decisions = false;
+        public bool client_apply_server_input_to_followers = true;
+        public float resim_followers_distance_treshold = 0f;
+        public float precise_resim_followers_distance_treshold = 3f;
+        public float follower_dist_tres = 0.201f;
+        public float follower_rot_tres = 0.201f;
+        public float follower_velo_tres = 0.201f;
+        public float follower_avelo_tres = 0.201f;
     }
 }

@@ -161,7 +161,17 @@ namespace DefaultNamespace
                 config.dist_tres, config.rot_tres, config.velo_tres, config.avelo_tres);
             PredictionManager.ROUND_TRIP_GETTER = () => NetworkTime.rtt;
 
-            Debug.Log($"[NetworkPredictionManagerAdapter][ApplyConfig] sim:{config.SimulationHz}Hz render:{config.RenderingHz}Hz net:{config.NetworkHz}Hz buffer:{config.server_buffer_size} catchupSections:{config.server_catchup_sections} resimChecker:{PredictionManager.SNAPSHOT_INSTANCE_RESIM_CHECKER}");
+            //FOLLOWERS
+            //NOTE: entities pick up FOLLOWER_INSTANCE_RESIM_CHECKER when they register, so entities registered before this keep the old one.
+            PredictionManager.IGNORE_CONTROLLABLE_FOLLOWER_DECISIONS = config.resim_ignore_follower_decisions;
+            PredictionManager.IGNORE_NON_AUTH_RESIM_DECISIONS = config.ignore_non_auth_resim_decisions;
+            ClientPredictedEntity.APPLY_SERVER_INPUT_TO_FOLLOWERS = config.client_apply_server_input_to_followers;
+            PredictionManager.RESIMULATE_FOLLOWERS_SQR_DISTANCE_THRESHOLD = Mathf.Pow(config.resim_followers_distance_treshold, 2);
+            PredictionManager.RESIMULATE_PRECISE_FOLLOWERS_SQR_DISTANCE_THRESHOLD = Mathf.Pow(config.precise_resim_followers_distance_treshold, 2);
+            PredictionManager.FOLLOWER_INSTANCE_RESIM_CHECKER = new SimpleConfigurableResimulationDecider(
+                config.follower_dist_tres, config.follower_rot_tres, config.follower_velo_tres, config.follower_avelo_tres);
+
+            Debug.Log($"[NetworkPredictionManagerAdapter][ApplyConfig] sim:{config.SimulationHz}Hz render:{config.RenderingHz}Hz net:{config.NetworkHz}Hz buffer:{config.server_buffer_size} catchupSections:{config.server_catchup_sections} resimChecker:{PredictionManager.SNAPSHOT_INSTANCE_RESIM_CHECKER} ignoreFollowerDecisions:{PredictionManager.IGNORE_CONTROLLABLE_FOLLOWER_DECISIONS}");
         }
 
         private NetworkConnectionToClient GetNetConn(int connId)
