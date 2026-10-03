@@ -19,6 +19,8 @@ namespace DefaultNamespace
         [SerializeField] private float throttle;
         [SerializeField] private float steer;
         [SerializeField] private bool boost;
+        [SerializeField] private bool strafeLeft;
+        [SerializeField] private bool strafeRight;
         float ReadKeyboardThrottle()
         {
             float up = UnityEngine.InputSystem.Keyboard.current.upArrowKey.isPressed ? 1 : 0;
@@ -37,6 +39,16 @@ namespace DefaultNamespace
         {
             return UnityEngine.InputSystem.Keyboard.current.spaceKey.isPressed;
         }
+
+        bool ReadKeyboardStrafeLeft()
+        {
+            return UnityEngine.InputSystem.Keyboard.current.qKey.isPressed;
+        }
+
+        bool ReadKeyboardStrafeRight()
+        {
+            return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
+        }
         
         public int GetFloatInputCount()
         {
@@ -45,7 +57,7 @@ namespace DefaultNamespace
 
         public int GetBinaryInputCount()
         {
-            return 1;
+            return 3;
         }
 
         public void SampleInput(PredictionInputRecord input)
@@ -53,6 +65,8 @@ namespace DefaultNamespace
             input.WriteNextScalar(ReadKeyboardThrottle());
             input.WriteNextScalar(ReadKeyboardRotate());
             input.WriteNextBinary(ReadKeyboardBoost());
+            input.WriteNextBinary(ReadKeyboardStrafeLeft());
+            input.WriteNextBinary(ReadKeyboardStrafeRight());
         }
 
         public bool ValidateInput(float deltaTime, PredictionInputRecord input)
@@ -65,6 +79,8 @@ namespace DefaultNamespace
             throttle = input.ReadNextScalar();
             steer = input.ReadNextScalar();
             boost = input.ReadNextBool();
+            strafeLeft = input.ReadNextBool();
+            strafeRight = input.ReadNextBool();
         }
 
         public void ClearInput()
@@ -72,6 +88,8 @@ namespace DefaultNamespace
             throttle = 0;
             steer = 0;
             boost = false;
+            strafeLeft = false;
+            strafeRight = false;
         }
 
         float GetMaxSpeed(bool boosting)
@@ -91,12 +109,21 @@ namespace DefaultNamespace
             {
                 throttleForce = boost ? Mathf.Sign(throttle) * BoostPower : ThrottlePower * throttle;
             }
-            
-            Debug.Log($"[PredictionPlayerController] ApplyForces rotT:{rotToque} throttleForce:{throttleForce}");
+            Vector3 throttleVector = Vector3.forward * throttleForce;
+            if (strafeLeft)
+            {
+                throttleVector += Vector3.left * BoostPower;
+            }
+            if (strafeRight)
+            {
+                throttleVector += Vector3.right * BoostPower;
+            }
+
+            Debug.Log($"[PredictionPlayerController] ApplyForces rotT:{rotToque} throttleForce:{throttleVector}");
             rigidbody.AddRelativeTorque(Vector3.up * rotToque);
             if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
             {
-                rigidbody.AddRelativeForce(Vector3.forward * throttleForce);
+                rigidbody.AddRelativeForce(throttleVector);
             }
         }
 

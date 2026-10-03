@@ -21,6 +21,8 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     [SerializeField] float rotate;
     [SerializeField] float throttle;
     [SerializeField] bool boost;
+    [SerializeField] bool strafeLeft;
+    [SerializeField] bool strafeRight;
     [SerializeField] private bool groundTest = false;
     [SerializeField] private GameObject ground;
     
@@ -55,6 +57,16 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
     {
         return UnityEngine.InputSystem.Keyboard.current.spaceKey.isPressed;
     }
+
+    bool ReadKeyboardStrafeLeft()
+    {
+        return UnityEngine.InputSystem.Keyboard.current.qKey.isPressed;
+    }
+
+    bool ReadKeyboardStrafeRight()
+    {
+        return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
+    }
     
     private void FixedUpdate()
     {
@@ -63,23 +75,27 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
             rotate = ReadKeyboardRotate();
             throttle = ReadKeyboardThrottle();
             boost = ReadKeyboardBoost();
-            
+            strafeLeft = ReadKeyboardStrafeLeft();
+            strafeRight = ReadKeyboardStrafeRight();
+
             ComputeForces();
             predictedRigidbody.predictedRigidbody.AddRelativeTorque(torqueVector);
             if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
             {
                 predictedRigidbody.predictedRigidbody.AddRelativeForce(throttleVector);
             }
-            CmdApplyServerForce(rotate, throttle, boost);
+            CmdApplyServerForce(rotate, throttle, boost, strafeLeft, strafeRight);
         }
-        
+
         //TODO: a better host mode check?
         if (isServer && isClient && isLocalPlayer)
         {
             rotate = ReadKeyboardRotate();
             throttle = ReadKeyboardThrottle();
             boost = ReadKeyboardBoost();
-            LocalApplyForces(rotate, throttle, boost);
+            strafeLeft = ReadKeyboardStrafeLeft();
+            strafeRight = ReadKeyboardStrafeRight();
+            LocalApplyForces(rotate, throttle, boost, strafeLeft, strafeRight);
         }
     }
     
@@ -95,19 +111,29 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
         {
             throttleVector = Vector3.forward * ( boost ? Mathf.Sign(throttle) * BoostPower : ThrottlePower * throttle);
         }
-    }
-    
-    [Command]
-    void CmdApplyServerForce(float crotate, float cthrottle, bool cboost)
-    {
-        LocalApplyForces(crotate, cthrottle, cboost);
+        if (strafeLeft)
+        {
+            throttleVector += Vector3.left * BoostPower;
+        }
+        if (strafeRight)
+        {
+            throttleVector += Vector3.right * BoostPower;
+        }
     }
 
-    void LocalApplyForces(float crotate, float cthrottle, bool cboost)
+    [Command]
+    void CmdApplyServerForce(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight)
+    {
+        LocalApplyForces(crotate, cthrottle, cboost, cstrafeLeft, cstrafeRight);
+    }
+
+    void LocalApplyForces(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight)
     {
         rotate = crotate;
         throttle = cthrottle;
         boost = cboost;
+        strafeLeft = cstrafeLeft;
+        strafeRight = cstrafeRight;
         ComputeForces();
         
         rigidbody.AddRelativeTorque(torqueVector);

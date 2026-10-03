@@ -68,6 +68,16 @@ public class PredictedPlayerController : TickNetworkBehaviour
     {
         return UnityEngine.InputSystem.Keyboard.current.spaceKey.isPressed;
     }
+
+    bool ReadKeyboardStrafeLeft()
+    {
+        return UnityEngine.InputSystem.Keyboard.current.qKey.isPressed;
+    }
+
+    bool ReadKeyboardStrafeRight()
+    {
+        return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
+    }
     
     private void Update()
     {
@@ -89,7 +99,7 @@ public class PredictedPlayerController : TickNetworkBehaviour
         // REMARK: why aer you reading the input data again here?
         //float horizontal = Input.GetAxisRaw("Horizontal");
         //float vertical = Input.GetAxisRaw("Vertical");
-        PlayerReplicateData md = new PlayerReplicateData(ReadKeyboardBoost(), ReadKeyboardThrottle(), ReadKeyboardRotate());
+        PlayerReplicateData md = new PlayerReplicateData(ReadKeyboardBoost(), ReadKeyboardThrottle(), ReadKeyboardRotate(), ReadKeyboardStrafeLeft(), ReadKeyboardStrafeRight());
         // REMARK: why are you forcing jump to false now?
         //_jump = false;
 
@@ -127,6 +137,14 @@ public class PredictedPlayerController : TickNetworkBehaviour
         if (Mathf.Abs(0 - Mathf.Abs(data.throttle)) > 0.05f)
         {
             throttleVector = Vector3.forward * ( data.boost ? Mathf.Sign(data.throttle) * BoostPower : ThrottlePower * data.throttle);
+        }
+        if (data.strafeLeft)
+        {
+            throttleVector += Vector3.left * BoostPower;
+        }
+        if (data.strafeRight)
+        {
+            throttleVector += Vector3.right * BoostPower;
         }
         
         PredictionRigidbody.AddRelativeTorque(torqueVector);

@@ -48,6 +48,8 @@ namespace DefaultNamespace
             input.throttle = ReadKeyboardThrottle(keyboard);
             input.steer = ReadKeyboardRotate(keyboard);
             input.boost = keyboard.spaceKey.isPressed;
+            input.strafeLeft = keyboard.qKey.isPressed;
+            input.strafeRight = keyboard.eKey.isPressed;
         }
 
         protected override void Simulate(PlayerInput input, ref PlayerState state, float delta)
@@ -63,11 +65,20 @@ namespace DefaultNamespace
             {
                 throttleForce = input.boost ? Mathf.Sign(input.throttle) * BoostPower : ThrottlePower * input.throttle;
             }
+            Vector3 throttleVector = Vector3.forward * throttleForce;
+            if (input.strafeLeft)
+            {
+                throttleVector += Vector3.left * BoostPower;
+            }
+            if (input.strafeRight)
+            {
+                throttleVector += Vector3.right * BoostPower;
+            }
 
             _predictedRigidbody.AddRelativeTorque(Vector3.up * rotTorque);
             if (!LimitSpeed || _predictedRigidbody.linearVelocity.magnitude < GetMaxSpeed(input.boost))
-            {            
-                _predictedRigidbody.AddRelativeForce(Vector3.forward * throttleForce);
+            {
+                _predictedRigidbody.AddRelativeForce(throttleVector);
             }
         }
 
@@ -76,6 +87,8 @@ namespace DefaultNamespace
             public float throttle;
             public float steer;
             public bool boost;
+            public bool strafeLeft;
+            public bool strafeRight;
 
             public void Dispose() { }
         }
