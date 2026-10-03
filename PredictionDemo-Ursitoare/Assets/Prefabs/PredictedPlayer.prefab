@@ -206,6 +206,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e21ed954df54b1f94259b284d071ed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DefaultNamespace.PredictablePlayerController
+  MaxTravelSpeed: 15
+  MaxBoostTravelSpeed: 30
   RotationPower: 10
   ThrottlePower: 10
   BoostPower: 50

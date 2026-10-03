@@ -5,7 +5,10 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
 {
     [SyncVar(hook = nameof(OnColorUpdated))]
     private Color color;
-    
+    [SerializeField] private bool LimitSpeed = true;
+    [SerializeField] private float MaxTravelSpeed = 15f;
+    [SerializeField] private float MaxBoostTravelSpeed = 30f;
+
     [SerializeField] private Renderer renderer;
     [SerializeField] private PredictedRigidbody predictedRigidbody;
     [SerializeField] private Rigidbody rigidbody;
@@ -62,7 +65,10 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
             
             ComputeForces();
             predictedRigidbody.predictedRigidbody.AddRelativeTorque(torqueVector);
-            predictedRigidbody.predictedRigidbody.AddRelativeForce(throttleVector);
+            if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
+            {
+                predictedRigidbody.predictedRigidbody.AddRelativeForce(throttleVector);
+            }
             CmdApplyServerForce(rotate, throttle, boost);
         }
         
@@ -96,12 +102,20 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
         ComputeForces();
         
         rigidbody.AddRelativeTorque(torqueVector);
-        rigidbody.AddRelativeForce(throttleVector);
+        if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
+        {
+            rigidbody.AddRelativeForce(throttleVector);
+        }
     }
     
     void OnColorUpdated(Color oldC, Color newC)
     {
         renderer.material.color = newC;
+    }
+    
+    float GetMaxSpeed(bool boosting) 
+    {
+        return boosting ? MaxBoostTravelSpeed : MaxTravelSpeed;
     }
     
     //TODO: ground test

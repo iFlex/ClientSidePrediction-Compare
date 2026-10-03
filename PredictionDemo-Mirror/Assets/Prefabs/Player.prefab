@@ -303,6 +303,9 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  LimitSpeed: 1
+  MaxTravelSpeed: 15
+  MaxBoostTravelSpeed: 30
   renderer: {fileID: 4275506919534458859}
   predictedRigidbody: {fileID: -3409908334997036482}
   rigidbody: {fileID: 2630165976509984081}

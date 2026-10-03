@@ -9,6 +9,9 @@ using UnityEngine;
 public class PredictedPlayerController : TickNetworkBehaviour
 {
     private readonly SyncVar<Color> color = new SyncVar<Color>();
+    [SerializeField] private bool LimitSpeed = true;
+    [SerializeField] private float MaxTravelSpeed = 15f;
+    [SerializeField] private float MaxBoostTravelSpeed = 30f;
     
     [SerializeField] private Renderer _renderer;
     [SerializeField] private GameObject _playerPrefab;
@@ -118,7 +121,10 @@ public class PredictedPlayerController : TickNetworkBehaviour
         Vector3 throttleVector = Vector3.forward * ( data.boost ? Mathf.Sign(data.throttle) * BoostPower : ThrottlePower * data.throttle);
         
         PredictionRigidbody.AddRelativeTorque(torqueVector);
-        PredictionRigidbody.AddRelativeForce(throttleVector);
+        if (!LimitSpeed || PredictionRigidbody.Rigidbody.linearVelocity.magnitude < GetMaxSpeed(data.boost))
+        {
+            PredictionRigidbody.AddRelativeForce(throttleVector);
+        }
         
         // Simulate the added forces.
         // Typically you call this at the end of your replicate. Calling
@@ -151,5 +157,10 @@ public class PredictedPlayerController : TickNetworkBehaviour
     void OnColorChanged(Color prev, Color next, bool asServer)
     {
         _renderer.material.color = next;
+    }
+    
+    float GetMaxSpeed(bool boosting)
+    {
+        return boosting ? MaxBoostTravelSpeed : MaxTravelSpeed;
     }
 }

@@ -6,6 +6,10 @@ namespace DefaultNamespace
 {
     public class PredictablePlayerController : MonoBehaviour, PredictableControllableComponent, PredictableComponent
     {
+        [SerializeField] private bool LimitSpeed = true;
+        [SerializeField] private float MaxTravelSpeed = 15f;
+        [SerializeField] private float MaxBoostTravelSpeed = 30f;
+        
         [SerializeField] private float RotationPower = 10;
         [SerializeField] private float ThrottlePower = 10;
         [SerializeField] private float BoostPower = 50;
@@ -69,6 +73,11 @@ namespace DefaultNamespace
             boost = false;
         }
 
+        float GetMaxSpeed(bool boosting)
+        {
+            return boosting ? MaxBoostTravelSpeed : MaxTravelSpeed;
+        }
+        
         public void ApplyForces()
         {
             float rotToque = RotationPower * steer;
@@ -76,7 +85,10 @@ namespace DefaultNamespace
             
             Debug.Log($"[PredictionPlayerController] ApplyForces rotT:{rotToque} throttleForce:{throttleForce}");
             rigidbody.AddRelativeTorque(Vector3.up * rotToque);
-            rigidbody.AddRelativeForce(Vector3.forward * throttleForce);
+            if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
+            {
+                rigidbody.AddRelativeForce(Vector3.forward * throttleForce);
+            }
         }
 
         public bool HasState()

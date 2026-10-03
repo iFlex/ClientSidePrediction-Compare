@@ -234,6 +234,9 @@ MonoBehaviour:
   _predictionPolicy: 0
   _repeatInputFactor: 0.8
   _extrapolateInput: 1
+  LimitSpeed: 1
+  MaxTravelSpeed: 15
+  MaxBoostTravelSpeed: 30
   RotationPower: 10
   ThrottlePower: 10
   BoostPower: 50

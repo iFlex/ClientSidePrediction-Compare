@@ -8,6 +8,10 @@ namespace DefaultNamespace
     [RequireComponent(typeof(PredictedRigidbody))]
     public class PredictedPlayerController : PredictedIdentity<PredictedPlayerController.PlayerInput, PredictedPlayerController.PlayerState>
     {
+        [SerializeField] private bool LimitSpeed = true;
+        [SerializeField] private float MaxTravelSpeed = 15f;
+        [SerializeField] private float MaxBoostTravelSpeed = 30f;
+            
         [SerializeField] private float RotationPower = 10;
         [SerializeField] private float ThrottlePower = 10;
         [SerializeField] private float BoostPower = 50;
@@ -52,7 +56,10 @@ namespace DefaultNamespace
             float throttleForce = input.boost ? Mathf.Sign(input.throttle) * BoostPower : ThrottlePower * input.throttle;
 
             _predictedRigidbody.AddRelativeTorque(Vector3.up * rotTorque);
-            _predictedRigidbody.AddRelativeForce(Vector3.forward * throttleForce);
+            if (!LimitSpeed || _predictedRigidbody.linearVelocity.magnitude < GetMaxSpeed(input.boost))
+            {            
+                _predictedRigidbody.AddRelativeForce(Vector3.forward * throttleForce);
+            }
         }
 
         public struct PlayerInput : IPredictedData
@@ -68,6 +75,11 @@ namespace DefaultNamespace
         public struct PlayerState : IPredictedData<PlayerState>
         {
             public void Dispose() { }
+        }
+        
+        float GetMaxSpeed(bool boosting) 
+        {
+            return boosting ? MaxBoostTravelSpeed : MaxTravelSpeed;
         }
     }
 }
