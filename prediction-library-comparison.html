@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction Library Comparison</title>
+<meta name="description" content="Static code analysis comparing the client-side prediction layers of Ursitoare, FishNet 4.7.3 and PurrDiction 1.3.3 across 17 categories.">
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface-2: #f0efeb;
+    --text: #1d1d1b;
+    --muted: #5f5e5a;
+    --border: #dcdad3;
+    --accent: #3b5bdb;
+    --gold-bg: #e7f5e9; --gold-fg: #1e6b2f;
+    --silver-bg: #fdf3dc; --silver-fg: #7a5600;
+    --bronze-bg: #fbe7e4; --bronze-fg: #9b2c1e;
+    --u: #3b5bdb; --f: #0b7285; --p: #9c36b5;
+    --code-bg: #efeee9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --surface: #1f1f1c; --surface-2: #272724; --text: #ecebe6; --muted: #a8a69e; --border: #3a3935;
+      --accent: #8fa8ff;
+      --gold-bg: #173a20; --gold-fg: #8fe0a2; --silver-bg: #3d3214; --silver-fg: #f1cf7a; --bronze-bg: #43211c; --bronze-fg: #f3a597;
+      --u: #8fa8ff; --f: #5fc8da; --p: #d690e8; --code-bg: #2b2b27;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161614; --surface: #1f1f1c; --surface-2: #272724; --text: #ecebe6; --muted: #a8a69e; --border: #3a3935;
+    --accent: #8fa8ff;
+    --gold-bg: #173a20; --gold-fg: #8fe0a2; --silver-bg: #3d3214; --silver-fg: #f1cf7a; --bronze-bg: #43211c; --bronze-fg: #f3a597;
+    --u: #8fa8ff; --f: #5fc8da; --p: #d690e8; --code-bg: #2b2b27;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .lede { color: var(--muted); max-width: 760px; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+  .chip { font-size: .8rem; border: 1px solid var(--border); background: var(--surface); padding: 2px 10px; border-radius: 999px; color: var(--muted); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card .place { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .card .name { font-size: 1.25rem; font-weight: 650; margin: 2px 0 4px; }
+  .card .score { font-size: .9rem; color: var(--muted); margin-bottom: 8px; }
+  .card ul { margin: 0; padding-left: 18px; font-size: .92rem; }
+  .u { color: var(--u); } .f { color: var(--f); } .p { color: var(--p); }
+  .bar { border-left: 4px solid; padding-left: 12px; }
+  .bar.u { border-color: var(--u); } .bar.f { border-color: var(--f); } .bar.p { border-color: var(--p); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th { background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.r { text-align: center; font-weight: 650; width: 92px; }
+  .r1 { background: var(--gold-bg); color: var(--gold-fg); }
+  .r2 { background: var(--silver-bg); color: var(--silver-fg); }
+  .r3 { background: var(--bronze-bg); color: var(--bronze-fg); }
+  td.num { font-variant-numeric: tabular-nums; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .85rem; color: var(--muted); margin-top: 8px; }
+  .legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend .l1::before { background: var(--gold-bg); border: 1px solid var(--gold-fg); }
+  .legend .l2::before { background: var(--silver-bg); border: 1px solid var(--silver-fg); }
+  .legend .l3::before { background: var(--bronze-bg); border: 1px solid var(--bronze-fg); }
+  .cat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 12px; }
+  .cat-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 8px; }
+  .ranks { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill { font-size: .78rem; font-weight: 650; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .cat .why { color: var(--muted); font-size: .92rem; margin-bottom: 10px; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .grid3 > div { font-size: .92rem; }
+  .grid3 h4 { margin: 0 0 4px; font-size: .9rem; }
+  .note { background: var(--surface-2); border-radius: 10px; padding: 14px 16px; font-size: .92rem; }
+  .pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  footer { margin-top: 48px; color: var(--muted); font-size: .85rem; }
+  @media (max-width: 560px) { h1 { font-size: 1.6rem; } td.r { width: auto; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Prediction library comparison</h1>
+  <p class="lede">A static code analysis of the client-side prediction layers of three Unity networking stacks. All three were reviewed in the same <code>PredictionCompare</code> project, a force-driven Rigidbody player with free physics balls. Each one is ranked against the other two across 17 categories.</p>
+  <div class="meta">
+    <span class="chip"><span class="u">●</span> Ursitoare <code>f2168cd</code> (Mirror adapter)</span>
+    <span class="chip"><span class="f">●</span> FishNet 4.7.3 built-in prediction</span>
+    <span class="chip"><span class="p">●</span> PurrDiction 1.3.3 on PurrNet 1.23.0-beta.51</span>
+    <span class="chip">Reviewed 2026-10-03</span>
+  </div>
+</header>
+
+<section>
+  <h2>Verdict</h2>
+  <p>There's no single winner. Each library leads in a different area:</p>
+  <ul>
+    <li><b>PurrDiction</b> is the most complete and robust design.</li>
+    <li><b>FishNet</b> is the most mature and readable codebase.</li>
+    <li><b>Ursitoare</b> is the leanest and most portable. It has the cheapest expected CPU profile and is the only one with a test suite. It loses on resilience, robustness and ergonomics.</li>
+  </ul>
+  <div class="cards">
+    <div class="card bar p">
+      <div class="place">1st overall · avg rank 1.88</div>
+      <div class="name p">PurrDiction</div>
+      <div class="score">Leads 7 of 17 categories</div>
+      <ul>
+        <li>Delta-compressed, bit-packed frames with input acknowledgement</li>
+        <li>Predicted spawning, deterministic math, desync detection</li>
+        <li>Highest memory footprint and the most per-tick work</li>
+      </ul>
+    </div>
+    <div class="card bar f">
+      <div class="place">2nd overall · avg rank 2.00</div>
+      <div class="name f">FishNet</div>
+      <div class="score">Leads 4 of 17 categories</div>
+      <ul>
+        <li>Best inline documentation, pooled and profiled throughout</li>
+        <li>Collider rollback (lag compensation) included</li>
+        <li>Replays on every reconcile; prediction is fused into <code>NetworkBehaviour</code></li>
+      </ul>
+    </div>
+    <div class="card bar u">
+      <div class="place">3rd overall · avg rank 2.12</div>
+      <div class="name u">Ursitoare</div>
+      <div class="score">Leads 6 of 17 categories</div>
+      <ul>
+        <li>Only resimulates when an entity's error exceeds a threshold; independent of any networking library</li>
+        <li>106 unit tests; pluggable physics, resim deciders and interpolators</li>
+        <li>The broadest prediction metrics (22/28 coverage), though seven items never work</li>
+        <li>No input redundancy, no compression, 13 conflicting config switches</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Ranking matrix</h2>
+  <p>1 = best of the three. A tie shares the average rank. The overall order is the mean rank, with every category weighted equally. If your priorities differ, re-weight the rows that matter to you.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Category</th><th class="u">Ursitoare</th><th class="f">FishNet</th><th class="p">PurrDiction</th></tr></thead>
+      <tbody>
+        <tr><td>Performance (expected CPU)</td><td class="r r1">1</td><td class="r r2">2</td><td class="r r3">3</td></tr>
+        <tr><td>Computational complexity</td><td class="r r1">1</td><td class="r r2">2</td><td class="r r3">3</td></tr>
+        <tr><td>Memory overhead</td><td class="r r2">2</td><td class="r r1">1</td><td class="r r3">3</td></tr>
+        <tr><td>Bandwidth efficiency</td><td class="r r3">3</td><td class="r r2">2</td><td class="r r1">1</td></tr>
+        <tr><td>Architecture</td><td class="r r2">2</td><td class="r r3">3</td><td class="r r1">1</td></tr>
+        <tr><td>Developer ergonomics</td><td class="r r3">3</td><td class="r r2">2</td><td class="r r1">1</td></tr>
+        <tr><td>Readability</td><td class="r r2">2</td><td class="r r1">1</td><td class="r r3">3</td></tr>
+        <tr><td>Comprehensiveness</td><td class="r r3">3</td><td class="r r2">2</td><td class="r r1">1</td></tr>
+        <tr><td>Extensibility</td><td class="r r1">1</td><td class="r r3">3</td><td class="r r2">2</td></tr>
+        <tr><td>Resilience (bad networks)</td><td class="r r3">3</td><td class="r r2">2</td><td class="r r1">1</td></tr>
+        <tr><td>Robustness (errors, misconfiguration)</td><td class="r r3">3</td><td class="r r2">2</td><td class="r r1">1</td></tr>
+        <tr><td>Code quality</td><td class="r r3">3</td><td class="r r1">1</td><td class="r r2">2</td></tr>
+        <tr><td>Test coverage</td><td class="r r1">1</td><td class="r r2">2.5</td><td class="r r2">2.5</td></tr>
+        <tr><td>Observability &amp; debugging</td><td class="r r1">1</td><td class="r r3">3</td><td class="r r2">2</td></tr>
+        <tr><td>Correctness &amp; determinism model</td><td class="r r3">3</td><td class="r r2">2</td><td class="r r1">1</td></tr>
+        <tr><td>Portability (no lock-in)</td><td class="r r1">1</td><td class="r r2">2.5</td><td class="r r2">2.5</td></tr>
+        <tr><td>Maturity &amp; ecosystem</td><td class="r r3">3</td><td class="r r1">1</td><td class="r r2">2</td></tr>
+        <tr><th>Mean rank</th><th class="u">2.12</th><th class="f">2.00</th><th class="p">1.88</th></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="legend"><span class="l1">Best</span><span class="l2">Middle / tie</span><span class="l3">Weakest</span></div>
+</section>
+
+<section>
+  <h2>Measured indicators</h2>
+  <p>Counted from source. For FishNet, "prediction core" means <code>NetworkBehaviour.Prediction.cs</code>, <code>NetworkObject.Prediction.cs</code>, <code>Managing/Prediction</code> and <code>Object/Prediction</code>; FishNet's whole runtime is about 96.6k lines. For PurrDiction, the counts cover <code>Core</code>, <code>Hierarchy</code> and <code>UnityPhysics</code>, except the first line, which covers its whole runtime.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Indicator</th><th class="u">Ursitoare</th><th class="f">FishNet</th><th class="p">PurrDiction</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime size</td><td class="num">5.7k lines / 33 files</td><td class="num">~5.0k lines prediction core (+ codegen)</td><td class="num">27.8k lines / 123 files (6.1k is fixed-point &amp; soft-float math)</td></tr>
+        <tr><td>Shipped unit tests</td><td class="num">106 tests / 4.3k lines</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr><td>XML doc-comment lines</td><td class="num">0 (but a 4.4k-line markdown manual)</td><td class="num">999 (~20% of the core)</td><td class="num">769 (~4%)</td></tr>
+        <tr><td>TODO / FIXME markers</td><td class="num">97</td><td class="num">0</td><td class="num">0</td></tr>
+        <tr><td>Exception guards (<code>catch</code>)</td><td class="num">12</td><td class="num">0</td><td class="num">29</td></tr>
+        <tr><td>Pooling / cache references</td><td class="num">0</td><td class="num">37</td><td class="num">219</td></tr>
+        <tr><td>Distinct profiler markers</td><td class="num">0</td><td class="num">12</td><td class="num">17</td></tr>
+        <tr><td>Prediction counters exposed</td><td class="num">~50 public fields (7 never work)</td><td class="num">0</td><td class="num">~40 read-only properties</td></tr>
+        <tr><td>When the client corrects itself</td><td>Only when an entity's error exceeds a threshold</td><td>Every reconcile (optionally throttled by frame rate)</td><td>Every verified server frame</td></tr>
+        <tr><td>State on the wire</td><td>Full-precision record per entity, per connection, every tick, plus re-sampled input</td><td>Full serialization (delta path present but forced to <code>FullSerialize</code>)</td><td>Bit-packed delta against an acknowledged baseline; periodic full frames</td></tr>
+        <tr><td>Input loss handling</td><td>None (one unreliable send per tick)</td><td>Up to 5 past inputs resent</td><td>Acknowledged redundancy window of up to 32 ticks</td></tr>
+        <tr><td>Client clock / lead control</td><td>None; the server buffers and catches up</td><td>TimeManager timing adjustment</td><td>Target / min / max lead, slack controller, starvation jump</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="metrics">
+  <h2>Prediction metrics inventory</h2>
+  <p>Every counter, timing value, event, hook and profiler marker each library exposes for prediction, sorted by the operational question it answers. <b>Yes</b> means a built-in runtime value or event answers it directly. <b>Partial</b> means you can derive it from a hook or tick numbers, or it's only visible in the Unity Profiler. <b>No</b> means you'd have to build it yourself.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Question</th><th class="u">Ursitoare</th><th class="f">FishNet</th><th class="p">PurrDiction</th></tr></thead>
+      <tbody>
+        <tr><td>How often does the client correct?</td>
+          <td><span class="pill r1">Yes</span> <code>totalResimulations</code>, <code>TickStat.didResimulate</code></td>
+          <td><span class="pill r2">Partial</span> count <code>OnPreReconcile</code> yourself (fires on every state)</td>
+          <td><span class="pill r1">Yes</span> <code>framesReceivedTotal</code>, <code>onStartingToRollback</code></td></tr>
+        <tr><td>How far back does it replay?</td>
+          <td><span class="pill r1">Yes</span> <code>TickStat.resimTicks</code>, <code>maxRewindDistance</code>, <code>totalRewindDistance</code></td>
+          <td><span class="pill r2">Partial</span> <code>LocalTick − ClientStateTick</code> inside <code>OnPreReconcile</code></td>
+          <td><span class="pill r2">Partial</span> <code>localTick</code> against the confirmed tick; lead counters</td></tr>
+        <tr><td>How long does a correction take?</td>
+          <td><span class="pill r1">Yes</span> <code>TickStat.resimDuration</code>, <code>duration</code>, <code>lastTickDuration</code></td>
+          <td><span class="pill r2">Partial</span> Profiler only (12 reconcile/replay markers)</td>
+          <td><span class="pill r2">Partial</span> Profiler only (17 markers, including a per-type <code>Simulate</code>)</td></tr>
+        <tr><td>How large was the error?</td>
+          <td><span class="pill r1">Yes</span> decider <code>_avg/_Max</code> distance, rotation, velocity and angular velocity</td>
+          <td><span class="pill r3">No</span> compare the reconcile data yourself</td>
+          <td><span class="pill r2">Partial</span> <code>OnVerifiedStateReceived(tick, predicted, verified)</code> hook</td></tr>
+        <tr><td>Which entity caused it?</td>
+          <td><span class="pill r1">Yes</span> <code>totalResimulationsDueToAuthority / Followers / Both</code></td>
+          <td><span class="pill r3">No</span></td>
+          <td><span class="pill r3">No</span></td></tr>
+        <tr><td>Did players see a jump?</td>
+          <td><span class="pill r1">Yes</span> <code>onLargeTransformJump</code> (distance and angle of the jump)</td>
+          <td><span class="pill r3">No</span></td>
+          <td><span class="pill r2">Partial</span> <code>viewBufferTrimsTotal</code>, <code>viewBufferStarvedFramesTotal</code></td></tr>
+        <tr><td>What is the latency?</td>
+          <td><span class="pill r1">Yes</span> per-tick input→state RTT: <code>lastClientTickRTT</code>, <code>onTickRttDuration</code></td>
+          <td><span class="pill r1">Yes</span> <code>RoundTripTime</code>, <code>OnRoundTripTimeUpdated</code></td>
+          <td><span class="pill r2">Partial</span> <code>lastMaxAckLagTicks</code>, <code>lastInputSlackMs</code> (ping is in PurrNet core)</td></tr>
+        <tr><td>Are server states being lost?</td>
+          <td><span class="pill r2">Partial</span> <code>onPacketLoss</code>, <code>countMissingServerHistory</code> (the gap event never fires)</td>
+          <td><span class="pill r3">No</span></td>
+          <td><span class="pill r2">Partial</span> <code>starvationJumpsTotal</code>, acknowledgement lag, view-buffer starvation</td></tr>
+        <tr><td>Is the server getting good input?</td>
+          <td><span class="pill r1">Yes</span> <code>ticksWithoutInput</code>, <code>lateTickCount</code>, <code>totalBufferingTicks</code>, <code>catchupTicks</code>, <code>maxClientDelay</code>, <code>invalidInputs</code> + 8 reason codes</td>
+          <td><span class="pill r3">No</span> excess replicates are dropped silently</td>
+          <td><span class="pill r2">Partial</span> client-side starvation and slack; no per-entity server view</td></tr>
+        <tr><td>Is the client's lead or clock right?</td>
+          <td><span class="pill r3">No</span> no clock control to report on</td>
+          <td><span class="pill r3">No</span> <code>_adjustedTickDelta</code> is private</td>
+          <td><span class="pill r1">Yes</span> <code>currentTickPacingScale</code>, <code>leadJumpsTotal</code>, <code>leadPausesTotal</code>, <code>minLeadSnapsTotal</code></td></tr>
+        <tr><td>How much bandwidth does prediction use?</td>
+          <td><span class="pill r3">No</span></td>
+          <td><span class="pill r1">Yes</span> traffic statistics by packet type (Replicate, Reconcile, StateUpdate, TimingUpdate) and GameObject</td>
+          <td><span class="pill r1">Yes</span> <code>TickBandwidthProfiler</code> bits per type per tick, plus frame and delta-section totals</td></tr>
+        <tr><td>Has the simulation desynced?</td>
+          <td><span class="pill r2">Partial</span> <code>potentialDesync</code> reports stream anomalies, not state divergence</td>
+          <td><span class="pill r3">No</span></td>
+          <td><span class="pill r1">Yes</span> hash reports → <code>onDesyncDetected</code>, <code>onLocalDesync</code> with a policy</td></tr>
+        <tr><td>Hooks for custom instrumentation</td>
+          <td><span class="pill r1">Yes</span> pre/post tick, pre/post resim tick, resim start/step, new state reached</td>
+          <td><span class="pill r1">Yes</span> 7 public reconcile/replay/transform-sync events, <code>ReplicateState</code> flags</td>
+          <td><span class="pill r1">Yes</span> rollback start/finish, before/after physics pass, per-identity hooks</td></tr>
+        <tr><td>Per-entity breakdown</td>
+          <td><span class="pill r1">Yes</span> about 12 counters on each client entity and 11 on each server entity</td>
+          <td><span class="pill r2">Partial</span> <code>IsBehaviourReconciling</code>, traffic per GameObject</td>
+          <td><span class="pill r2">Partial</span> per-type markers and bandwidth, but no per-instance counters</td></tr>
+        <tr><th>Coverage score (Yes = 2, Partial = 1)</th><th class="u">22 / 28</th><th class="f">10 / 28</th><th class="p">18 / 28</th></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:24px">How reliable the metrics are</h3>
+  <div class="grid3" style="margin-top:8px">
+    <div class="cat"><h4 class="u">Ursitoare</h4>
+      <ul>
+        <li><b>Seven items never work.</b> <code>totalResimulationsTriggeredByLocalAuthority/Followers/Both</code> are never written; they duplicate the <code>DueTo*</code> counters, which do work. <code>totalDesyncToSnapCount</code>, <code>catchupBufferWipes</code> and the <code>inputUsed</code> event are never written either. <code>GAP_IN_SERVER_STREAM</code> can never fire (see the conflicts report).</li>
+        <li><b>Noisy reason codes.</b> <code>CATCHUP</code> fires every tick while catch-up is on, even when nothing is caught up. <code>INPUT_BUFFERED</code> fires on every buffering tick.</li>
+        <li><b>Error stats are global.</b> The decider's averages and maximums live on one shared checker instance, so they combine every entity and can't be broken down by entity.</li>
+        <li><b>No API.</b> The counters are writable public fields with no reset or snapshot method, and there are no profiler markers.</li>
+      </ul></div>
+    <div class="cat"><h4 class="f">FishNet</h4>
+      <ul>
+        <li><b>Excellent timing hooks</b> on every reconcile phase, with matching profiler markers.</li>
+        <li><b>No counters at all</b> for prediction. Queue sizes, dropped replicates, reconcile throttling and clock adjustment are internal.</li>
+        <li><b>Traffic statistics</b> are the strongest per-packet-type bandwidth breakdown of the three.</li>
+      </ul></div>
+    <div class="cat"><h4 class="p">PurrDiction</h4>
+      <ul>
+        <li><b>A clean API:</b> about 40 read-only counters, named consistently (<code>…Total</code>, <code>max…</code>, <code>last…</code>) and documented as "diagnostic only".</li>
+        <li><b>Static tools</b> with explicit start and stop: <code>PredictionHistoryTelemetry.Begin/End</code> snapshots and <code>TickBandwidthProfiler</code>.</li>
+        <li><b>Gaps:</b> no correction-size or cause metric; you have to build them from <code>OnVerifiedStateReceived</code>.</li>
+      </ul></div>
+  </div>
+
+  <details style="margin-top:16px">
+    <summary style="cursor:pointer;font-weight:600">Full catalogue per library</summary>
+    <div class="grid3" style="margin-top:12px">
+      <div class="cat"><h4 class="u">Ursitoare</h4>
+        <p><b>PredictionManager (client)</b>: <code>totalResimulations</code>, <code>totalResimulationSteps</code>, <code>totalResimulationsSkipped</code>, <code>totalResimulationsDueToAuthority/Followers/Both</code>, <code>totalTickFreezes</code>, <code>resimSkipNotEnoughHistory</code>, <code>maxRewindDistance</code>, <code>totalRewindDistance</code>, <code>clientStatesReceived</code>, <code>clientSendErrors</code>, <code>lastTickDuration</code>, <code>lastInterTickDuration</code>, <code>lastServerRecvIntervalDuration</code>, <code>lastClientTickRTT</code>, <code>reportedServerTickId</code>.</p>
+        <p><b>Events</b>: <code>onTickStat</code> (tick, duration, didResimulate, resimDuration, resimTicks), <code>onTickRttDuration</code>, <code>onPacketLoss</code>, <code>onSnapToServer</code>, <code>resimulation</code>, <code>resimulationStep</code>, <code>onPreTick</code>, <code>onPostTick</code>, <code>onPreResimTick</code>, <code>onPostResimTick</code>, <code>onServerStateSendError</code>, <code>onClientStateSendError</code>.</p>
+        <p><b>ClientPredictedEntity</b>: <code>totalTicks</code>, <code>ticksAsFollower</code>, <code>ticksAsLocalAuthority</code>, <code>resimTicks</code>, <code>resimTicksAsAuthority</code>, <code>resimTicksAsFollower</code>, <code>maxServerDelay</code>, <code>resimChecksSkippedDueToLackOfServerData</code>, <code>resimChecksSkippedDueToServerAheadOfClient</code>, <code>oldServerTickCount</code>, <code>countMissingServerHistory</code>, <code>lastSvTickId</code>; <code>potentialDesync</code> reasons MISSING_SERVER_COMPARISON, GAP_IN_SERVER_STREAM, SERVER_AHEAD_OF_CLIENT, SNAP_TO_SERVER_NO_DATA; <code>newStateReached</code>, <code>newAuthoritativeStateReached</code>.</p>
+        <p><b>ServerPredictedEntity</b>: <code>ticksWithoutInput</code>, <code>totalMissingInputTicks</code>, <code>totalBufferingTicks</code>, <code>lateTickCount</code>, <code>inputJumps</code>, <code>invalidInputs</code>, <code>catchupTicks</code>, <code>maxClientDelay</code>, <code>totalSnapAheadCounter</code>, <code>clUpdateCount</code>, <code>clAddedUpdateCount</code>; <code>potentialDesync</code> reasons NO_INPUT_FOR_SERVER_TICK, INPUT_BUFFERED, INPUT_JUMP, MULTIPLE_INPUTS_PER_FRAME, INVALID_INPUT, LATE_TICK, TICK_OVERFLOW, CATCHUP; <code>inputReceived</code>, <code>firstTickArrived</code>, <code>stateSampled</code>.</p>
+        <p><b>Resim decider</b>: <code>_checkCount</code>, <code>_avgDistD/_avgRotD/_avgVeloD/_avgAVeloD</code>, <code>_MaxDistD/_MaxRotD/_MaxVeloD/_MaxAVeloD</code>. <b>Visuals</b>: <code>onLargeTransformJump</code>, <code>onLargeTransformJumpGlobal</code> (thresholds 0.35 m and 2.5°).</p>
+      </div>
+      <div class="cat"><h4 class="f">FishNet</h4>
+        <p><b>PredictionManager</b>: events <code>OnPreReconcile</code>, <code>OnReconcile</code>, <code>OnPostReconcile</code>, <code>OnPrePhysicsTransformSync</code>, <code>OnPostPhysicsTransformSync</code>, <code>OnPreReplicateReplay</code>, <code>OnPostReplicateReplay</code>; state <code>IsReconciling</code>, <code>ClientStateTick</code>, <code>ServerStateTick</code>, <code>ClientReplayTick</code>, <code>ServerReplayTick</code>, <code>GetReconcileStateTick()</code>.</p>
+        <p><b>Objects</b>: <code>NetworkObject.IsObjectReconciling</code>, <code>NetworkBehaviour.IsBehaviourReconciling</code>; <code>ReplicateState</code> flags on every replicate call (Ticked / Replayed / Created, <code>IsFuture()</code>).</p>
+        <p><b>TimeManager</b>: <code>RoundTripTime</code>, <code>HalfRoundTripTime</code>, <code>OnRoundTripTimeUpdated</code>, <code>LastPacketTick</code>, <code>Tick</code>, <code>LocalTick</code>, <code>TickDelta</code>, <code>OnPrePhysicsSimulation</code>, <code>OnPostPhysicsSimulation</code>.</p>
+        <p><b>Statistics</b>: <code>NetworkTrafficStatistics.OnNetworkTraffic</code> with inbound and outbound bytes per <code>PacketId</code> (Replicate, Reconcile, TimingUpdate, StateUpdate…) and per GameObject.</p>
+        <p><b>Profiler markers</b>: <code>PredictionManager.OnPreReconcile</code>, <code>OnReconcile</code>, <code>Physics.SyncTransforms</code>, <code>Physics2D.SyncTransforms</code>, <code>OnPre/PostPhysicsTransformSync</code>, <code>OnPostReconcileSyncTransforms</code>, <code>OnPre/Post/ReplicateReplay</code>, <code>OnPostReconcile</code>, <code>TimeManager_OnLateUpdate</code>.</p>
+      </div>
+      <div class="cat"><h4 class="p">PurrDiction</h4>
+        <p><b>Input upload</b>: <code>inputSendsTotal</code>, <code>inputBytesSentTotal</code>, <code>inputTicksSentTotal</code>, <code>lastMaxAckLagTicks</code>, <code>lastInputSlackMs</code>.</p>
+        <p><b>Frames and bandwidth</b>: <code>framesReceivedTotal</code>, <code>fullFramesReceivedTotal</code>, <code>reliableFramesSentTotal</code>, <code>fullFramesSentTotal</code>, <code>fullFrameBytesTotal</code>, <code>deltaFramesWrittenTotal</code>, <code>deltaFrameBytesTotal</code>, <code>maxDeltaFrameBytes</code>, <code>deltaSectionDelete/Hierarchy/Input/StateBitsTotal</code>, <code>suppressedTicksTotal</code>, <code>latchCyclesTotal</code>, <code>latchTicksTotal</code>, <code>maxLatchTicks</code>.</p>
+        <p><b>Timing and lead</b>: <code>currentTickPacingScale</code>, <code>leadJumpsTotal</code>, <code>leadPausesTotal</code>, <code>minLeadSnapsTotal</code>, <code>starvationJumpsTotal</code>, <code>localTick</code>, <code>localTickInContext</code>, <code>tickRate</code>, <code>tickDelta</code>.</p>
+        <p><b>Apply and view</b>: <code>renderPhaseFrameAppliesTotal</code>, <code>tickPhaseFrameAppliesTotal</code>, <code>maxFrameApplyAgeFrames</code>, <code>viewBufferTrimsTotal</code>, <code>viewBufferStarvedFramesTotal</code>; flags <code>isReplaying</code>, <code>isVerified</code>, <code>isCatchingUpFrames</code>.</p>
+        <p><b>Events and hooks</b>: <code>onStartingToRollback</code>, <code>onRollbackFinished</code>, <code>onBeforePhysicsPass</code>, <code>onAfterPhysicsPass</code>, <code>onDesyncDetected</code>, <code>onLocalDesync</code>, <code>OnVerifiedStateReceived(tick, predicted, verified)</code>. <b>Tools</b>: <code>TickBandwidthProfiler</code>, <code>PredictionHistoryTelemetry</code>. <b>Profiler markers</b>: 17, including <code>RollbackToFrame</code>, <code>ReplayToLatestTick</code>, <code>WriteStateDeltas</code> and a per-type <code>{type}.Simulate</code>.</p>
+      </div>
+    </div>
+  </details>
+</section>
+
+<section>
+  <h2>Category analysis</h2>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Performance (expected CPU)</h3>
+      <div class="ranks"><span class="pill r1">U 1</span><span class="pill r2">F 2</span><span class="pill r3">P 3</span></div></div>
+    <p class="why">The dominant client cost in all three is re-running physics after a correction. How often that happens decides the ranking.</p>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>It only rewinds when a decider reports an error above the threshold (<code>ComputePredictionDecision</code>), so on a good link most ticks cost one simulation step. When it does resimulate, it re-runs the whole scene with <code>Physics.Simulate</code> once per rewound tick. Two things count against it: there's no pooling, and logging is gated by static flags but common.</div>
+      <div><h4 class="f">FishNet</h4>Every received state replays from the server tick up to the local tick, calling <code>SimulatePhysics</code> for the whole scene each replay tick (<code>PredictionManager.cs:697-721</code>). The surrounding code is well optimized (pooled readers, profiler markers), and <code>_reduceReconcilesWithFramerate</code> can drop reconciles on slow clients.</div>
+      <div><h4 class="p">PurrDiction</h4>Every verified frame rolls back <em>every</em> predicted system (hierarchy, players, time, random, physics), decodes a delta, simulates the verified tick and replays to the head (<code>ProcessQueuedFrames</code>). It's the most work per frame, partly offset by heavy pooling.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Computational complexity</h3>
+      <div class="ranks"><span class="pill r1">U 1</span><span class="pill r2">F 2</span><span class="pill r3">P 3</span></div></div>
+    <p class="why">E = predicted entities, W = bodies in the physics scene, R = replay length in ticks (about round-trip time ÷ tick length), S = registered prediction systems, C = connections.</p>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>O(E) checks per tick, and O(R·W) only on ticks that resimulate. The server does O(E·C) sends per tick.</div>
+      <div><h4 class="f">FishNet</h4>O(R·W) for <strong>every</strong> state received, plus per-behaviour replicate history work.</div>
+      <div><h4 class="p">PurrDiction</h4>O(R·(W + S)) for every verified frame, plus delta decoding that's linear in the changed fields.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Memory overhead</h3>
+      <div class="ranks"><span class="pill r2">U 2</span><span class="pill r1">F 1</span><span class="pill r3">P 3</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Small, preallocated ring buffers for each entity, and a 120-tick history of tracked bodies. But every incoming state record is a fresh allocation, per-entity <code>tickResimCounter</code> is a <code>Dictionary</code> that's never trimmed (it grows for the whole session), and both entity classes have finalizers that log.</div>
+      <div><h4 class="f">FishNet</h4>Replicate and reconcile history in pooled <code>RingBuffer</code>s of structs, sized by <code>_maximumServerReplicates</code> (default 15) and the reconcile window. The leanest of the three.</div>
+      <div><h4 class="p">PurrDiction</h4>Input history of <code>tickRate × 5</code> per identity, plus full state history for every system and buffered delta frames. The largest footprint by design, mitigated by <code>DisposableList</code> and packer pooling.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Bandwidth efficiency</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r2">F 2</span><span class="pill r1">P 1</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Every tick (<code>ServerPredictionManager.PostSimTick</code>) it sends each connection full-float position, rotation, velocity, angular velocity and component state for every entity, plus an input record. At 120 Hz that's E·C records × 120/s with no compression. There's an optional world-state packet that batches them, but it isn't delta-encoded either.</div>
+      <div><h4 class="f">FishNet</h4>A compact writer, but the delta path is disabled (<code>GetDeltaSerializeOption</code> returns <code>FullSerialize</code>). Up to 5 redundant past inputs travel upstream.</div>
+      <div><h4 class="p">PurrDiction</h4>A <code>BitPacker</code> delta against the last acknowledged baseline, with full frames only when needed. Input redundancy is sized to measured loss bursts.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Architecture</h3>
+      <div class="ranks"><span class="pill r2">U 2</span><span class="pill r3">F 3</span><span class="pill r1">P 1</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>A clean client/server split (<code>ClientPredictionManager</code> / <code>ServerPredictionManager</code>), with transport hidden behind callbacks and a pluggable <code>PhysicsController</code>. Weakened by global static configuration and singletons, and by entity behaviour spread across several static flags.</div>
+      <div><h4 class="f">FishNet</h4>Prediction is woven into <code>NetworkBehaviour</code> and <code>NetworkObject</code> through partial classes and codegen-generated replicate and reconcile methods. Powerful, but tightly coupled and spread across the framework.</div>
+      <div><h4 class="p">PurrDiction</h4>A coherent "simulated world": every piece of state is a <code>PredictedIdentity</code> with typed input and state, and built-in systems (hierarchy, players, time, random) use the same rollback path. Optional modules and a deterministic layer sit cleanly on top.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Developer ergonomics</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r2">F 2</span><span class="pill r1">P 1</span></div></div>
+    <p class="why">Evidence from building the same demo in each.</p>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>You implement a 12-method interface. Input and state are read and written by position, so field order has to match exactly. You write your own network adapter (about 400 lines in the demo) and configure through static fields. In the demo, the library's default settings produced the follower-drift bug.</div>
+      <div><h4 class="f">FishNet</h4>Attributes and codegen keep the code short, but you must remember to call <code>CreateReconcile()</code> yourself, handle <code>ReplicateState</code> subtleties and manage the object caches. The demo shipped without reconciliation because one override was missing, and nothing warned about it.</div>
+      <div><h4 class="p">PurrDiction</h4>Subclass <code>PredictedIdentity&lt;Input, State&gt;</code>, override <code>GetFinalInput</code> and <code>Simulate</code>, and add <code>PredictedRigidbody</code>. Reconciliation, spawning and player handling are automatic. The fewest concepts to get right.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Readability</h3>
+      <div class="ranks"><span class="pill r2">U 2</span><span class="pill r1">F 1</span><span class="pill r3">P 3</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>The smallest codebase and easy to trace end to end. It has no XML docs, though, along with 97 TODOs, commented-out code, mixed indentation and typos in API names (<code>CanResiumlate</code>).</div>
+      <div><h4 class="f">FishNet</h4>About 20% of the prediction core is XML documentation, and the long comments explain the timing reasoning. Consistent style. The big partial classes are the main cost.</div>
+      <div><h4 class="p">PurrDiction</h4>Clean code, but very large files (<code>PredictionManager</code> partials total about 5.7k lines) and sparse inline docs (around 4%). It takes a while to understand.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Comprehensiveness</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r2">F 2</span><span class="pill r1">P 1</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Rigidbody prediction, selective resimulation, several visual interpolators and desync events. No predicted spawning, lag compensation or clock control; the host game has to build those, as AntShipWars does with <code>LagCompensationStateHistory</code>.</div>
+      <div><h4 class="f">FishNet</h4>Replicate and reconcile, <code>PredictionRigidbody</code>, state forwarding, <code>PredictedSpawn</code>, tick smoothing, time sync and collider rollback.</div>
+      <div><h4 class="p">PurrDiction</h4>All of the above except collider rollback, plus predicted hierarchy and parenting, deterministic fixed-point and soft-float math, desync policies with hash reports, soft correction, predicted random, physics events, a state machine and prebuilt controllers.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Extensibility</h3>
+      <div class="ranks"><span class="pill r1">U 1</span><span class="pill r3">F 3</span><span class="pill r2">P 2</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Nearly every policy is a pluggable object: the physics controller, the resim deciders (separate for owned entities and followers), the interpolation provider and the transport callbacks. The easiest to bend to unusual games.</div>
+      <div><h4 class="f">FishNet</h4>Extended through events (<code>OnPreReconcile</code>, <code>OnReplicateReplay</code>…) and your own replicate code. The core flow is fixed by codegen.</div>
+      <div><h4 class="p">PurrDiction</h4>Custom systems and modules, a physics provider and per-identity overrides (<code>ModifyRollbackViewState</code>, <code>ModifyExtrapolatedInput</code>). Rich, but inside its world model.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Resilience (bad networks)</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r2">F 2</span><span class="pill r1">P 1</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Each input is sent once over an unreliable channel and never resent; late inputs are dropped (<code>IGNORE_OLD_INPUT</code>). Jitter is absorbed only by the server buffer and catch-up, which skip forces for the inputs they fold together. The client clock is never corrected.</div>
+      <div><h4 class="f">FishNet</h4>Past-input redundancy, state interpolation and dropping of excessive replicates, plus TimeManager timing adjustment.</div>
+      <div><h4 class="p">PurrDiction</h4>An acknowledged input window, lead control with min and max limits, recovery from input starvation, and full-frame fallback when delta baselines are lost.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Robustness (errors, misconfiguration)</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r2">F 2</span><span class="pill r1">P 1</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>An exception in one entity aborts the whole tick. There are 13 documented combinations of config switches that silently disable each other (see <code>Ursitoare/docs/configuration-conflicts.md</code>). The ownership leak on entity removal is known.</div>
+      <div><h4 class="f">FishNet</h4>Validates and clamps its settings (for example <code>_stateInterpolation</code> against <code>_maximumServerReplicates</code>). User replicate code isn't guarded, and a forgotten reconcile fails silently.</div>
+      <div><h4 class="p">PurrDiction</h4>User callbacks are wrapped in <code>try/catch</code> and fall back to default input. Settings are locked once running (<code>PurrLock</code>), and desync detection is built in.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Code quality</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r1">F 1</span><span class="pill r2">P 2</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Sound core ideas and a test suite, but uneven hygiene: dead flags, finalizers that log, uncapped dictionaries, a gap check that can never fire, and inconsistent naming.</div>
+      <div><h4 class="f">FishNet</h4>Mature and consistent, with pooling and profiler markers throughout, and obsolete APIs marked with removal targets.</div>
+      <div><h4 class="p">PurrDiction</h4>Modern and careful (pooling, telemetry, guarded callbacks). Very large classes and a beta host framework hold it back slightly.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Test coverage</h3>
+      <div class="ranks"><span class="pill r1">U 1</span><span class="pill r2">F 2.5</span><span class="pill r2">P 2.5</span></div></div>
+    <p>Ursitoare ships 106 NUnit tests covering the managers, entities, buffers, interpolation and physics rewind. Neither FishNet nor PurrDiction ships tests in its package; both rely on demos and their own internal processes.</p>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Observability &amp; debugging</h3>
+      <div class="ranks"><span class="pill r1">U 1</span><span class="pill r3">F 3</span><span class="pill r2">P 2</span></div></div>
+    <p class="why">Revised after the <a href="#metrics">metrics inventory</a>, from coverage 22 / 10 / 18 out of 28. An earlier draft ranked PurrDiction first from a quick read.</p>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Directly answers the most prediction-specific questions: correction rate, replay length and cost, error size, cause, visible jumps, per-tick RTT and server input health, all per entity. Held back by seven items that never work, noisy reason codes, error stats combined across all entities, and no profiler markers.</div>
+      <div><h4 class="f">FishNet</h4>Excellent reconcile and replay hooks with matching profiler markers, and the best traffic breakdown by packet type. But it has no prediction counters at all, so you instrument everything yourself.</div>
+      <div><h4 class="p">PurrDiction</h4>The cleanest metrics API (about 40 read-only totals) and the only library that reports clock lead and desyncs, with a bandwidth profiler per type. It doesn't measure error size or the cause of a correction.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Correctness &amp; determinism model</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r2">F 2</span><span class="pill r1">P 1</span></div></div>
+    <div class="grid3">
+      <div><h4 class="u">Ursitoare</h4>Relies on PhysX determinism and a threshold check per entity. In some configurations followers are left with no way to be corrected (drift, then periodic jumps).</div>
+      <div><h4 class="f">FishNet</h4>Always reconciles to server state and replays, so it's simple and consistent, but bounded by PhysX determinism.</div>
+      <div><h4 class="p">PurrDiction</h4>Full-world rollback to a verified frame, plus optional fixed-point and soft-float math for cross-platform determinism, and server-side desync policies.</div>
+    </div>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Portability (no lock-in)</h3>
+      <div class="ranks"><span class="pill r1">U 1</span><span class="pill r2">F 2.5</span><span class="pill r2">P 2.5</span></div></div>
+    <p>Ursitoare doesn't depend on any networking library; the demo runs it on Mirror, and any transport that can deliver its handful of message types (input, state, heartbeat, ownership) will do. FishNet prediction only works inside FishNet, and PurrDiction only inside PurrNet.</p>
+  </div>
+
+  <div class="cat">
+    <div class="cat-head"><h3>Maturity &amp; ecosystem</h3>
+      <div class="ranks"><span class="pill r3">U 3</span><span class="pill r1">F 1</span><span class="pill r2">P 2</span></div></div>
+    <p>FishNet is a long-established framework on its fourth major version, with a large user base and many deprecation cycles behind it. PurrDiction is actively developed on a host framework that's still in beta (<code>1.23.0-beta.51</code>). Ursitoare is an in-house library with one production consumer (AntShipWars) and has no external user base.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Which to pick</h2>
+  <div class="pick">
+    <div class="card bar p"><h3 class="p">PurrDiction</h3>For a new project that wants the most complete prediction model: predicted spawning, low bandwidth, determinism tooling. Accept the beta host framework and the higher per-frame cost.</div>
+    <div class="card bar f"><h3 class="f">FishNet</h3>When you want a proven framework, good documentation and built-in lag compensation, and can live with replaying on every reconcile and with the codegen conventions.</div>
+    <div class="card bar u"><h3 class="u">Ursitoare</h3>When you need to stay on Mirror or another transport, control the prediction policy yourself, or keep CPU low with selective resimulation. To close the gap, prioritise input redundancy, delta state, the configuration conflicts, and isolating each entity's exceptions.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Method &amp; caveats</h2>
+  <div class="note">
+    <ul>
+      <li><b>No benchmarks.</b> Performance, complexity, memory and bandwidth rankings are <b>expected</b> behaviour, worked out from data structures and control flow. Nothing was measured in Unity. Profiling all three on the same scene and tick rate (the demos now share 120 Hz configs) would confirm or overturn those four rows.</li>
+      <li><b>Code versions:</b> FishNet and PurrDiction are the copies imported into <code>PredictionDemo-FishNet</code> and <code>PredictionDemo-PurrNet</code>. Ursitoare is <code>C:\Development\Ursitoare</code> at <code>f2168cd</code>.</li>
+      <li><b>Counting:</b> indicator counts are text matches (for example <code>catch</code>, <code>///</code>, pooling identifiers) and are meant as relative signals, not exact metrics.</li>
+      <li><b>Possible bias:</b> Ursitoare was reviewed in more depth than the other two (a full review, a configuration-conflict audit and new tests), so more of its faults are known. The other two may have issues this review didn't find.</li>
+      <li><b>Mirror excluded:</b> Mirror's own <code>PredictedRigidbody</code> was left out, as requested.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>Generated from source analysis of the PredictionCompare repository, 2026-10-03.</footer>
+</main>
+</body>
+</html>
