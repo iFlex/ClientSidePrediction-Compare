@@ -1,10 +1,12 @@
 // FishNet collector for the ResimGraph overlay. Reads only FishNet's public API: TimeManager tick and RTT
-// events, PredictionManager reconcile/replay events, the active Transport's receive events, the local
-// connection's first object and NetworkObject.GetGraphicalObject().
+// events, PredictionManager reconcile/replay events, the active Transport's receive events, the server's
+// NetworkConnection PacketTick/ReplicateTick, the local connection's first object and
+// NetworkObject.GetGraphicalObject().
 // Setup: add this component to any GameObject in the Gameplay scene. See ResimGraph.md.
 
 using System.Collections.Generic;
 using FishNet;
+using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Timing;
 using FishNet.Object;
@@ -30,7 +32,10 @@ namespace PredictionDebug
 
         readonly TickClock _clock = new TickClock();
         readonly ByteRate _in = new ByteRate();
+        readonly ByteRate _out = new ByteRate();
+        CountingTugboat _countingTransport;
         readonly PoseHistory _history = new PoseHistory();
+        readonly TickSendTimes _inputSent = new TickSendTimes();
         readonly VisualJumpDetector _jump = new VisualJumpDetector();
 
         NetworkObject _localObject;
@@ -49,8 +54,6 @@ namespace PredictionDebug
 
         uint _lastRemoteTick;
         float _lastStateArrival = -1f;
-        int _serverPacketsThisTick;
-        bool _serverTickOpen;
 
         protected override void Configure()
         {
@@ -65,16 +68,14 @@ namespace PredictionDebug
             ClockAdjust.MarkSubstitute("TICK RATE DRIFT",
                 "FishNet speeds up and slows down the client tick (TimeManager's adjusted tick delta), but the value is private. Shown instead: the tick rate actually achieved over 2 s vs TimeManager.TickRate, which captures that adjustment.");
             Latency.WithNote("TimeManager.OnRoundTripTimeUpdated.");
+            InputRtt.MarkComputed("Time from TimeManager.OnPostTick of a client tick (its replicate is queued to send) until PredictionManager.OnPreReconcile with that clientTick. The server stamps each state with the last replicate tick it ran for the client. Read at reconcile, up to a tick after arrival; reconciles FishNet throttles away are not seen.");
             TickLead.MarkComputed("TimeManager.LocalTick minus the client tick of the latest reconcile (OnPreReconcile clientTick).");
             SnapshotAge.MarkComputed("Time since TimeManager.LastPacketTick.LastRemoteTick last advanced, checked on every Transport.OnClientReceivedData.");
-            InputBuffer.MarkSubstitute("PACKETS IN / TICK",
-                "The server's replicate queue is internal to NetworkBehaviour. Shown instead (server only): transport packets received from clients per server tick; 0 means no input arrived for that tick.");
-            InputBuffer.Unit = "";
-            InputBuffer.Scale = 4f;
+            InputBuffer.MarkComputed("Server only, sampled in OnPostTick: largest NetworkConnection.PacketTick.RemoteTick - ReplicateTick.RemoteTick across remote clients, i.e. client ticks received but not yet simulated. ReplicateTick only advances for created replicates, so a client whose ReplicateTick hasn't moved for more than GetMaximumServerReplicates() server ticks (idle, FishNet stops resending unchanged input) counts as 0.");
             PacketLoss.MarkSubstitute("TICK GAPS (est.)",
                 "FishNet exposes no loss counter. Shown instead: server ticks skipped between consecutive packets (LastPacketTick.LastRemoteTick). The server sends every tick while predicted objects move, so a gap usually means a lost or merged packet.");
             NetIn.WithNote("Transport.OnClientReceivedData / OnServerReceivedData bytes.");
-            NetOut.MarkUnsupported("FishNet has no public outgoing data event. Its outbound counters (NetworkTrafficStatistics / Network Profiler window) are internal.");
+            NetOut.MarkComputed("CountingTugboat.OnDataSent bytes (segments FishNet hands to SendToServer / SendToClient). FishNet has no public outgoing data event: NetworkTrafficStatistics.OnNetworkTraffic is public but its byte totals are internal, and so is Tugboat's LiteNetLib NetManager. Needs CountingTugboat on the NetworkManager instead of the stock Tugboat; inactive otherwise.");
             VisualJump.MarkComputed("FishNet has no jump event. The graph applies Ursitoare's test (move > 0.35 m or 2.5 deg in one frame) to the local player's graphical object.");
             Smoothing.MarkComputed("Local player: NetworkObject.GetGraphicalObject() position vs the rigidbody position (FishNet's tick smoother offset).");
         }
@@ -105,15 +106,21 @@ namespace PredictionDebug
                 _transport.OnClientReceivedData += OnClientReceived;
                 _transport.OnServerReceivedData += OnServerReceived;
             }
+            _countingTransport = _transport as CountingTugboat;
+            if (_countingTransport != null)
+                _countingTransport.OnDataSent += OnDataSent;
+            NetOut.Inactive = _countingTransport == null;
+            NetOut.InactiveReason = "(needs CountingTugboat transport, see ResimGraph.md)";
 
             _clock.Reset();
             _history.Clear();
+            _inputSent.Clear();
             _lastRemoteTick = 0;
             _lastStateArrival = -1f;
 
             // The host's own client doesn't reconcile; only remote clients predict.
             bool predicting = nm.IsClientOnlyStarted;
-            foreach (var s in new[] { Resim, ResimDepth, ResimCost, ResimEntities, PredictionError, Correction, Latency, TickLead, SnapshotAge, PacketLoss, VisualJump, Smoothing })
+            foreach (var s in new[] { Resim, ResimDepth, ResimCost, ResimEntities, PredictionError, Correction, Latency, InputRtt, TickLead, SnapshotAge, PacketLoss, VisualJump, Smoothing })
             {
                 s.Inactive = !predicting;
                 s.InactiveReason = nm.IsServerStarted ? "(no prediction on server/host)" : "(client only)";
@@ -145,6 +152,9 @@ namespace PredictionDebug
                 _transport.OnClientReceivedData -= OnClientReceived;
                 _transport.OnServerReceivedData -= OnServerReceived;
             }
+            if (_countingTransport != null)
+                _countingTransport.OnDataSent -= OnDataSent;
+            _countingTransport = null;
 
             _nm = null;
             _tm = null;
@@ -177,19 +187,39 @@ namespace PredictionDebug
         {
             _clock.Begin(TickGap);
             _resimMsThisTick = 0.0;
+        }
 
-            if (_nm != null && _nm.IsServerStarted)
+        /// <summary>After this server tick has run its replicates: how many client input ticks are still waiting.</summary>
+        void SampleServerInputBacklog()
+        {
+            uint maxStale = (uint)(_pm != null ? _pm.GetMaximumServerReplicates() : 15);
+            uint backlog = 0;
+            foreach (NetworkConnection conn in _nm.ServerManager.Clients.Values)
             {
-                if (_serverTickOpen)
-                    InputBuffer.Max(_serverPacketsThisTick);
-                _serverPacketsThisTick = 0;
-                _serverTickOpen = true;
+                if (conn == null || conn.IsLocalClient || conn.PacketTick.IsUnset || conn.ReplicateTick.IsUnset)
+                    continue;
+                // ReplicateTick.LocalTick is the server tick it last moved on; a long-stalled one means the client isn't sending input.
+                if (_tm.LocalTick - conn.ReplicateTick.LocalTick > maxStale)
+                    continue;
+
+                uint received = conn.PacketTick.RemoteTick;
+                uint ran = conn.ReplicateTick.RemoteTick;
+                if (received > ran)
+                    backlog = System.Math.Max(backlog, received - ran);
             }
+            InputBuffer.Max(backlog);
         }
 
         void OnPostTick()
         {
             _clock.End(TickCost, _resimMsThisTick);
+
+            if (_nm != null && _nm.IsServerStarted)
+                SampleServerInputBacklog();
+
+            // The replicate for LocalTick was created during this tick and goes out with the tick's outgoing data.
+            if (_nm != null && _nm.IsClientOnlyStarted)
+                _inputSent.Record(_tm.LocalTick);
 
             RefreshLocalPlayer();
             if (_localBody != null)
@@ -214,6 +244,9 @@ namespace PredictionDebug
 
             if (_tm.LocalTick >= clientTick)
                 TickLead.Max(_tm.LocalTick - clientTick);
+
+            if (_inputSent.TryTakeMs(clientTick, out float inputRttMs))
+                InputRtt.Max(inputRttMs);
         }
 
         /// <summary>Reconcile data has been applied and synced to physics, replay hasn't started: the body sits on the server state for clientTick.</summary>
@@ -268,10 +301,11 @@ namespace PredictionDebug
             _lastStateArrival = Time.unscaledTime;
         }
 
+        void OnDataSent(bool asServer, int bytes) => _out.Add(bytes);
+
         void OnServerReceived(ServerReceivedDataArgs args)
         {
             _in.Add(args.Data.Count);
-            _serverPacketsThisTick++;
         }
 
         protected override void Collect()
@@ -281,6 +315,8 @@ namespace PredictionDebug
                 ClockAdjust.Set(drift);
 
             NetIn.Set(_in.KBps());
+            if (_countingTransport != null)
+                NetOut.Set(_out.KBps());
 
             if (!_nm.IsClientOnlyStarted)
                 return;

@@ -129,7 +129,6 @@ namespace DefaultNamespace
                 throttleVector += Vector3.right * BoostPower;
             }
 
-            Debug.Log($"[PredictionPlayerController] ApplyForces rotT:{rotToque} throttleForce:{throttleVector}");
             rigidbody.AddRelativeTorque(Vector3.up * rotToque);
             if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
             {

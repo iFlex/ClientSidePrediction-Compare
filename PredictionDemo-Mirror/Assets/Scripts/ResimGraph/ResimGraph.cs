@@ -82,6 +82,7 @@ namespace PredictionDebug
             ClockAdjust.Scale = 5f;
             ClockAdjust.GridStep = 1f;
             Latency.WithNote("NetworkTime.rtt (exponential moving average of pings), drawn when it updates.");
+            InputRtt.MarkUnsupported("The demo sends input as a tickless [Command] that the server applies on arrival, and PredictedRigidbody state carries no reference to an input, so an input can't be matched to the state that applied it. LATENCY RTT is the closest measure.");
             TickLead.MarkComputed("Prediction horizon: (NetworkTime.predictedTime - NetworkClient.connection.remoteTimeStamp) in fixed steps. Mirror predicts in time, not ticks.");
             SnapshotAge.MarkComputed("Time since NetworkClient.connection.remoteTimeStamp last changed, i.e. since a server batch arrived.");
             InputBuffer.MarkSubstitute("CMDS RECEIVED / FRAME",

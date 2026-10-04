@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 231779934192412194}
   - component: {fileID: 8590447736153514164}
   - component: {fileID: -1216599419376852479}
+  - component: {fileID: 7291836450192837465}
   m_Layer: 0
   m_Name: NonPlayableBall
   m_TagString: Untagged
@@ -196,3 +197,19 @@ MonoBehaviour:
   rotationInterpolationSpeed: 10
   teleportDistanceMultiplier: 10
   reduceSendsWhileIdle: 1
+--- !u!114 &7291836450192837465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3860675955144817016}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be7140b1c8a5450d842b33934c5f3853, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 283d506f12f746058aa0bfdd371db75d, type: 2}
+  rigidbody: {fileID: 231779934192412194}
+  colliders:
+  - {fileID: 5016753141350285875}

@@ -41,5 +41,9 @@ namespace DefaultNamespace
         public float follower_rot_tres = 0.201f;
         public float follower_velo_tres = 0.201f;
         public float follower_avelo_tres = 0.201f;
+
+        //DEBUG
+        //NOTE: several of the library's per-tick and per-frame logs are on by default and cost noticeable CPU. Turns them all on or off.
+        public bool library_logging = false;
     }
 }

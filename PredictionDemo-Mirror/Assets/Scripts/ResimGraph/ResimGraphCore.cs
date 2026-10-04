@@ -366,6 +366,7 @@ namespace PredictionDebug
         protected GraphStrip TickGap;
         protected GraphStrip ClockAdjust;
         protected GraphStrip Latency;
+        protected GraphStrip InputRtt;
         protected GraphStrip TickLead;
         protected GraphStrip SnapshotAge;
         protected GraphStrip InputBuffer;
@@ -547,6 +548,12 @@ namespace PredictionDebug
                 new Color(0.60f, 0.50f, 1f), new Color(1f, 0.35f, 0.15f), latencyScaleMs, "0");
             Latency.GridStep = 50f;
 
+            // Same scale as LATENCY RTT so the two rows compare directly: the gap between them is how long
+            // inputs wait on the server (input buffer / slack) plus send batching.
+            InputRtt = AddStrip("input_rtt", "INPUT RTT", "ms", StripKind.Bar,
+                new Color(0.75f, 0.50f, 0.95f), new Color(1f, 0.25f, 0.25f), latencyScaleMs, "0");
+            InputRtt.GridStep = 50f;
+
             TickLead = AddStrip("tick_lead", "TICK LEAD", "t", StripKind.Bar,
                 new Color(0.45f, 0.80f, 0.95f), new Color(0.95f, 0.30f, 0.80f), tickLeadScaleTicks, "0");
             TickLead.GridStep = 10f;
@@ -634,7 +641,7 @@ namespace PredictionDebug
             _atlas.SetPixels32(clear);
             _column = new Color32[stripHeight];
 
-            _header = CreateText(_root.transform, "Header", new Color(1f, 1f, 1f, 0.9f), 10, TextAnchor.LowerLeft);
+            _header = CreateText(_root.transform, "Header", new Color(1f, 1f, 1f, 0.9f), 10, TextAnchor.LowerRight);
             _header.text = $"{LibraryName}   * computed by the graph   ~ closest substitute   {toggleKey}: hide";
 
             for (int i = 0; i < _shown.Count; i++)
@@ -686,7 +693,7 @@ namespace PredictionDebug
             return text;
         }
 
-        /// <summary>Stacks the strips top down from the top left corner and starts a new column when the screen runs out.</summary>
+        /// <summary>Stacks the strips top down from the top right corner and starts a new column to the left when the screen runs out.</summary>
         void Layout(bool force)
         {
             float scale = parentCanvas != null ? Mathf.Max(0.01f, parentCanvas.scaleFactor) : 1f;
@@ -697,9 +704,9 @@ namespace PredictionDebug
 
             const float headerHeight = 14f;
             var headerRect = _header.rectTransform;
-            headerRect.anchorMin = headerRect.anchorMax = headerRect.pivot = new Vector2(0f, 1f);
+            headerRect.anchorMin = headerRect.anchorMax = headerRect.pivot = new Vector2(1f, 1f);
             headerRect.sizeDelta = new Vector2(width * 2f, headerHeight);
-            headerRect.anchoredPosition = new Vector2(margin.x, -margin.y);
+            headerRect.anchoredPosition = new Vector2(-margin.x, -margin.y);
 
             float top = margin.y + headerHeight + gap;
             int rowsPerColumn = Mathf.Max(1, Mathf.FloorToInt((screen.y - top - margin.y + gap) / (stripHeight + gap)));
@@ -709,9 +716,9 @@ namespace PredictionDebug
                 int column = i / rowsPerColumn;
                 int row = i % rowsPerColumn;
                 var rt = _shown[i].Image.rectTransform;
-                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 1f);
                 rt.sizeDelta = new Vector2(width, stripHeight);
-                rt.anchoredPosition = new Vector2(margin.x + column * (width + columnGap), -(top + row * (stripHeight + gap)));
+                rt.anchoredPosition = new Vector2(-(margin.x + column * (width + columnGap)), -(top + row * (stripHeight + gap)));
             }
         }
 
@@ -932,6 +939,44 @@ namespace PredictionDebug
                     if (index - _bucketIndex > Buckets)
                         _bucketIndex = index - Buckets;
                 }
+            }
+        }
+
+        /// <summary>
+        /// When each tick's input first went out, so the server state that echoes the tick back can be timed
+        /// (INPUT RTT). Each tick is matched once: a server that keeps echoing the same tick (no new input)
+        /// would otherwise produce an ever-growing value.
+        /// </summary>
+        protected sealed class TickSendTimes
+        {
+            const int Size = 1024;
+            // tick + 1, so 0 marks an empty or consumed slot.
+            readonly ulong[] _ticks = new ulong[Size];
+            readonly double[] _times = new double[Size];
+
+            public void Clear() => Array.Clear(_ticks, 0, Size);
+
+            /// <summary>Keeps the first time a tick is recorded; later calls for the same tick are ignored.</summary>
+            public void Record(ulong tick)
+            {
+                int i = (int)(tick % Size);
+                if (_ticks[i] == tick + 1)
+                    return;
+                _ticks[i] = tick + 1;
+                _times[i] = TickClock.NowSeconds;
+            }
+
+            public bool TryTakeMs(ulong tick, out float ms)
+            {
+                int i = (int)(tick % Size);
+                if (_ticks[i] != tick + 1)
+                {
+                    ms = 0f;
+                    return false;
+                }
+                _ticks[i] = 0;
+                ms = (float)((TickClock.NowSeconds - _times[i]) * 1000.0);
+                return true;
             }
         }
 
