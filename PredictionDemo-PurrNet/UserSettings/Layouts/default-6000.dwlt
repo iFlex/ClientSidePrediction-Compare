@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_PixelRect:
     serializedVersion: 2
-    x: 0
+    x: -1920
     y: 43
     width: 1920
     height: 989
@@ -120,7 +120,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 112}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 37
+  controlID: 110
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -671,7 +671,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "UnityEditor.MainToolbarWindow\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
+    x: -1920
     y: 43
     width: 1920
     height: 36
@@ -1639,7 +1639,7 @@ MonoBehaviour:
   m_Position:
     m_Target: {x: 0, y: 0, z: 0}
     speed: 2
-    m_Value: {x: 575.2913, y: 0.000050008297, z: 1813.7655}
+    m_Value: {x: 0, y: 0, z: 0}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1691,7 +1691,7 @@ MonoBehaviour:
   m_Size:
     m_Target: 26.374704
     speed: 2
-    m_Value: 0.8660254
+    m_Value: 26.374704
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -1746,7 +1746,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "Hierarchy\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
+    x: -1920
     y: 79
     width: 261
     height: 907
@@ -1770,10 +1770,10 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -4926
-      - m_Data: -4652
-      - m_Data: -3730
-      - m_Data: -1370
+      - m_Data: -4430
+      - m_Data: -4156
+      - m_Data: -3226
+      - m_Data: -1294
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1820,7 +1820,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "Game\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 262
+    x: -1658
     y: 79
     width: 1294
     height: 635
@@ -1961,7 +1961,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "Project\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 262
+    x: -1658
     y: 740
     width: 1294
     height: 246
@@ -1989,7 +1989,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 0
     m_Folders:
-    - Assets/Prefabs
+    - Assets
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1999,7 +1999,7 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 16
   m_LastFolders:
-  - Assets/Prefabs
+  - Assets
   m_LastFoldersGridSize: 16
   m_LastProjectPath: D:\gamedev\PredictionCompare\PredictionDemo-PurrNet
   m_LockTracker:
@@ -2008,13 +2008,13 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs:
-    - m_Data: 49634
+    - m_Data: 33650
     m_LastClickedID:
-      m_Data: 49634
+      m_Data: 33650
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 33652
-    - m_Data: 49502
+    - m_Data: 33650
+    - m_Data: 49432
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2047,8 +2047,8 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 33652
-    - m_Data: 49502
+    - m_Data: 33650
+    - m_Data: 49432
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2077,7 +2077,7 @@ MonoBehaviour:
   m_ListAreaState:
     m_SelectedInstanceIDs: []
     m_LastClickedInstanceID: 0
-    m_HadKeyboardFocusLastEvent: 1
+    m_HadKeyboardFocusLastEvent: 0
     m_ExpandedInstanceIDs:
     - m_Data: 765740
     - m_Data: 108770
@@ -2124,7 +2124,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 0}
+    m_ScrollPosition: {x: 0, y: 25}
     m_GridSize: 16
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 312
@@ -7728,7 +7728,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "Inspector\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1558
+    x: -362
     y: 79
     width: 361
     height: 907
