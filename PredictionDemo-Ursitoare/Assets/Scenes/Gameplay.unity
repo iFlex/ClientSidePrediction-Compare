@@ -296,8 +296,7 @@ MonoBehaviour:
     rot_tres: 0.01
     velo_tres: 0.01
     avelo_tres: 0.01
-    resim_ignore_follower_decisions: 0
-    ignore_non_auth_resim_decisions: 0
+    predict_followers: 1
     client_apply_server_input_to_followers: 1
     resim_followers_distance_treshold: 0
     precise_resim_followers_distance_treshold: 3
