@@ -17,6 +17,9 @@ namespace PredictionDebug
     {
         protected override string LibraryName => "Ursitoare";
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void AutoSpawn() => SpawnIfMissing<ResimGraph>();
+
         // Marker for the player loop hook that runs at the start of every fixed step, before the
         // prediction adapter's FixedUpdate calls PredictionManager.Tick().
         struct UrsitoareBeforeTick { }

@@ -6,7 +6,9 @@ The graphs read **only the public API** of each library. Nothing in Ursitoare, M
 
 ## Wiring it up
 
-**Add the `ResimGraph` component to any GameObject in `Assets/Scenes/Gameplay.unity`.** That's the only step. In the Add Component menu it's under *Resim Graph*; the class is `PredictionDebug.ResimGraph`.
+**Nothing to do: just press Play, or run a build.** Once the first scene has loaded, each project creates a `ResimGraph (auto)` GameObject, kept across scene loads, unless the scene already has a `ResimGraph`.
+
+To place it yourself, for example to change its settings in the inspector, add the `ResimGraph` component to any GameObject in `Assets/Scenes/Gameplay.unity`. In the Add Component menu it's under *Resim Graph*; the class is `PredictionDebug.ResimGraph`. The automatic one then won't be created. To turn the automatic graph off completely, add `RESIM_GRAPH_NO_AUTOSPAWN` to *Project Settings → Player → Scripting Define Symbols*.
 
 - It creates its own screen-space overlay canvas. To draw into an existing canvas instead, assign it to *Parent Canvas*.
 - **F3** shows and hides the graphs. You can change the key under *Toggle Key*.
@@ -326,4 +328,4 @@ Every row has data. The only gap is the server's actual input queue depth: `_cli
   - the graph appears and fills on a client-only instance;
   - the Console support table matches the matrix above;
   - in Mirror, the correction rows react when you bump into a ball.
-- No scene or prefab was changed. Adding the component is left to you, as agreed.
+- No scene or prefab was changed. The graph creates itself at startup (see *Wiring it up*).

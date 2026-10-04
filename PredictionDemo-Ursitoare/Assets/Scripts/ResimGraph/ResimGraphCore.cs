@@ -422,6 +422,22 @@ namespace PredictionDebug
             return strip;
         }
 
+        /// <summary>
+        /// Called by each library's ResimGraph after the first scene loads: creates the overlay unless
+        /// the scene already has one, so the demos show it without any scene setup. Define
+        /// RESIM_GRAPH_NO_AUTOSPAWN in Player Settings to turn this off and place the component by hand.
+        /// </summary>
+        protected static void SpawnIfMissing<T>() where T : ResimGraphBase
+        {
+#if !RESIM_GRAPH_NO_AUTOSPAWN
+            if (FindAnyObjectByType<ResimGraphBase>(FindObjectsInactive.Include) != null)
+                return;
+            var go = new GameObject("ResimGraph (auto)");
+            DontDestroyOnLoad(go);
+            go.AddComponent<T>();
+#endif
+        }
+
         protected virtual void Awake()
         {
             CreateStandardStrips();

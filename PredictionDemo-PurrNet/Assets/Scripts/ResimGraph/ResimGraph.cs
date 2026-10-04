@@ -13,6 +13,9 @@ namespace PredictionDebug
     {
         protected override string LibraryName => "PurrNet (PurrDiction)";
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void AutoSpawn() => SpawnIfMissing<ResimGraph>();
+
         [Header("PurrNet")]
         [Tooltip("PurrNet only measures ping jitter, packet loss and bandwidth in a StatisticsManager. Adds one at startup when the scene has none. It sends about 20 small ping packets a second, which show up in NET OUT.")]
         [SerializeField] bool addStatisticsManagerIfMissing = true;

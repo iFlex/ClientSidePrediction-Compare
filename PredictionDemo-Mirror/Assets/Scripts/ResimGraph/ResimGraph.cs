@@ -19,6 +19,9 @@ namespace PredictionDebug
     {
         protected override string LibraryName => "Mirror (PredictedRigidbody)";
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void AutoSpawn() => SpawnIfMissing<ResimGraph>();
+
         struct MirrorBeforeReceive { }
         struct MirrorAfterReceive { }
         struct MirrorStepBegin { }

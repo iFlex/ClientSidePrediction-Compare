@@ -18,6 +18,9 @@ namespace PredictionDebug
     {
         protected override string LibraryName => "FishNet";
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void AutoSpawn() => SpawnIfMissing<ResimGraph>();
+
         NetworkManager _nm;
         TimeManager _tm;
         FishNetPredictionManager _pm;
