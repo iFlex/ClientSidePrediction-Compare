@@ -232,7 +232,7 @@ MonoBehaviour:
   _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
   _ownerSmoothedProperties: 255
-  _adaptiveInterpolation: 3
+  _adaptiveInterpolation: 0
   _spectatorSmoothedProperties: 255
   _spectatorInterpolation: 2
   _enableTeleport: 0
