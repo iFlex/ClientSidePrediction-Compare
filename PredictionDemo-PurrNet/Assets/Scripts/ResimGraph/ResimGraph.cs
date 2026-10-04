@@ -33,6 +33,7 @@ namespace PredictionDebug
 
         readonly TickClock _clock = new TickClock();
         readonly PoseHistory _history = new PoseHistory();
+        readonly TickSendTimes _inputSent = new TickSendTimes();
         readonly VisualJumpDetector _jump = new VisualJumpDetector();
 
         PredictedRigidbody _local;
@@ -67,6 +68,7 @@ namespace PredictionDebug
             TickGap.MarkComputed("Wall time between consecutive NetworkManager.onPreTick events.");
             ClockAdjust.WithNote("(PredictionManager.currentTickPacingScale - 1) x 100: PurrDiction's input-slack controller speeding up (+) or slowing down (-) the client tick, clamped to +-2%.");
             Latency.WithNote("TickManager.rtt, drawn when it updates.");
+            InputRtt.MarkComputed("Time from the forward (non-replay) physics pass of a local tick, whose input is then sent, until the local player's PredictedIdentity.lastVerifiedTick reaches that tick: PurrDiction shares one tick timeline, so the verified frame for tick T carries the server's simulation of the client's input for T. Read when the frame is applied (onRollbackFinished), not on packet arrival.");
             TickLead.WithNote("PredictionManager.localTick minus the local player's PredictedIdentity.lastVerifiedTick.");
             SnapshotAge.MarkComputed("Time since PredictionManager.framesReceivedTotal last advanced.");
             InputBuffer.MarkSubstitute("INPUT SLACK",
@@ -128,6 +130,7 @@ namespace PredictionDebug
 
             _clock.Reset();
             _history.Clear();
+            _inputSent.Clear();
             _lastFramesReceived = pm.framesReceivedTotal;
             _lastLeadAdjusts = LeadAdjustTotal(pm);
             _lastViewStarved = pm.viewBufferStarvedFramesTotal;
@@ -135,7 +138,7 @@ namespace PredictionDebug
             _nextLocalSearch = 0f;
 
             bool predicting = nm.isClientOnly;
-            foreach (var s in new[] { Resim, ResimDepth, ResimCost, ResimEntities, PredictionError, Correction, ClockAdjust, Latency, TickLead, SnapshotAge, InputBuffer, VisualJump, Smoothing, _leadAdjust, _viewStarved })
+            foreach (var s in new[] { Resim, ResimDepth, ResimCost, ResimEntities, PredictionError, Correction, ClockAdjust, Latency, InputRtt, TickLead, SnapshotAge, InputBuffer, VisualJump, Smoothing, _leadAdjust, _viewStarved })
             {
                 s.Inactive = !predicting;
                 s.InactiveReason = nm.isServer ? "(no rollback on server/host)" : "(client only)";
@@ -224,7 +227,14 @@ namespace PredictionDebug
 
         void OnBeforePhysicsPass()
         {
-            if (_pm == null || _local == null || _local.rb == null)
+            if (_pm == null)
+                return;
+
+            // Forward pass of a new local tick: its input has been sampled and goes out with this tick.
+            if (!_pm.isReplaying && _nm != null && _nm.isClientOnly)
+                _inputSent.Record(_pm.localTickInContext);
+
+            if (_local == null || _local.rb == null)
                 return;
 
             if (_inRollback && _pm.isReplaying)
@@ -265,6 +275,8 @@ namespace PredictionDebug
             if (_pm == null || AppliesTotal(_pm) == _appliesAtStart)
                 return;
 
+            TakeInputRtt();
+
             Resim.Event();
             ResimDepth.Max(_passesInRollback);
             ResimCost.Add((float)((TickClock.NowSeconds - _rollbackStart) * 1000.0));
@@ -279,6 +291,15 @@ namespace PredictionDebug
                     PushPoseError(Correction, position, rotation, _prePosition, _preRotation);
             }
             _havePrePose = false;
+        }
+
+        /// <summary>The verified tick may jump several ticks per frame; only the newest is timed, older ones age out of the ring.</summary>
+        void TakeInputRtt()
+        {
+            if (_local == null || !_local.lastVerifiedTick.HasValue)
+                return;
+            if (_inputSent.TryTakeMs(_local.lastVerifiedTick.Value, out float ms))
+                InputRtt.Max(ms);
         }
 
         float _nextEntityCount;
@@ -334,6 +355,9 @@ namespace PredictionDebug
             if (starved > _lastViewStarved)
                 _viewStarved.Event();
             _lastViewStarved = starved;
+
+            // Frames can also be applied outside a rollback (render phase); TryTake makes a second check harmless.
+            TakeInputRtt();
 
             if (_local != null)
             {

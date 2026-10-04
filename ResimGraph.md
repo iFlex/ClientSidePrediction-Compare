@@ -15,6 +15,7 @@ To place it yourself, for example to change its settings in the inspector, add t
 - **Watch it on a client-only instance.** In all four demos the host does not predict its own objects, so most graphs show `(client only)` or `(no prediction on server/host)` when hosting. The server-side input graph is the exception: it shows `(server only)` on clients.
 - It starts graphing once networking is up. It reconnects to a new session by itself if you stop and start again.
 - When it wakes up, it logs a support table to the Console: `[ResimGraph][<library>] graph support: ...`. The table lists every row with its source and the reason for any substitute.
+- **FishNet only:** NET OUT needs the `CountingTugboat` transport, which isn't in the scene yet. Until it is, the row shows `(needs CountingTugboat transport, see ResimGraph.md)`. To turn it on, add the `CountingTugboat` component to the NetworkManager GameObject in the Gameplay scene. FishNet's `TransportManager` picks up the transport already on that object and only adds a stock `Tugboat` at runtime when there's none. `CountingTugboat` is a `Tugboat` subclass that reports each segment it's asked to send and otherwise behaves exactly like `Tugboat`.
 - **PurrNet only:** jitter, packet loss and bandwidth come from PurrNet's `StatisticsManager`, and the Gameplay scene doesn't have one. The graph adds one to the NetworkManager GameObject at startup. You can turn this off with *Add Statistics Manager If Missing*. It sends about 20 small ping packets a second, which show up in NET OUT.
 
 Files, the same in every project:
@@ -23,11 +24,12 @@ Files, the same in every project:
 |---|---|
 | `Assets/Scripts/ResimGraph/ResimGraphCore.cs` | Shared drawing and layout code. Byte-identical in all four projects. |
 | `Assets/Scripts/ResimGraph/ResimGraph.cs` | Library-specific collector. This is the component you add. |
+| `Assets/Scripts/ResimGraph/CountingTugboat.cs` | FishNet only. A `Tugboat` subclass that reports outgoing bytes for NET OUT. Not wired into the scene yet; see the FishNet note above. |
 
 ### Reading the graphs
 
 - One column per rendered frame, scrolling left to right. The dim white column is the write head.
-- Graphs are stacked top-down from the top-left corner. When the screen runs out of height they continue in another column.
+- Graphs are stacked top-down from the top-right corner. When the screen runs out of height they continue in another column to the left.
 - Each label shows the latest value and the peak (`pk`) currently on screen. Event graphs show their rate per second and how many events are on screen. Bipolar graphs show the latest value and the range.
 - Label prefixes:
   - none: the value comes straight from a library counter, event or property.
@@ -51,7 +53,8 @@ These 18 rows appear in every project, in this order.
 | TICK COST | ms | Wall time of a normal simulation tick, excluding resimulation. |
 | TICK GAP | ms | Wall time between tick starts. Grid line = one tick. Colour shows the distance from one tick. |
 | CLOCK ADJUST | % (bipolar) | How much the library is currently speeding up (+) or slowing down (−) the client tick to stay in sync. |
-| LATENCY RTT | ms | Round trip time as the library reports it. |
+| LATENCY RTT | ms | Network round trip time: the library's ping. |
+| INPUT RTT | ms | Time from a client tick's input going out until a server state that echoes that tick comes back. Includes the network, how long the input waits on the server (input buffer or slack), and send batching. Same scale as LATENCY RTT, so the gap between the two rows is the server-side wait. |
 | TICK LEAD | ticks | How far the client runs ahead of the newest server-confirmed tick. |
 | SNAPSHOT AGE | ms | Time since the last server state arrived (sawtooth). Peaks show gaps in the stream. |
 | SERVER INPUT BUFFER | ticks | Client inputs waiting on the server. 0 means the server is starved and has to guess, which often causes resims. |
@@ -65,6 +68,7 @@ Some projects add extra rows after these. They're listed per library below.
 ### Read these differences before comparing numbers
 
 - **FishNet and PurrNet resimulate on every received state**, whether or not anything was wrong. Ursitoare resimulates only when its checker finds a mismatch. Mirror never replays physics at all. So the RESIM row runs nearly solid for FishNet and PurrNet, and that is expected. For comparing correctness across all four, PREDICTION ERROR and CORRECTION are the meaningful rows.
+- **LATENCY RTT is a ping in all four; INPUT RTT is the full input loop.** Ursitoare's tick round trip used to be on the LATENCY row, which made it look far slower than the others. It now sits on INPUT RTT next to the FishNet and PurrNet equivalents. Ursitoare and FishNet time it from the input being sent. PurrNet times it from the forward simulation of the tick. Ursitoare reads it on packet arrival, while FishNet and PurrNet read it when the state is applied, which can be up to a tick later.
 - **Mirror works in time, not ticks.** Its TICK COST and TICK GAP measure Unity's fixed step, and TICK LEAD is its time-based prediction horizon converted to fixed steps.
 - **What the demo prefabs render differs.** Ursitoare draws detached, interpolated visuals. Mirror draws a renderer that smoothly follows a physics ghost while the body moves. FishNet draws a tick-smoothed graphical object. PurrNet's `PredictedTransform.graphics` is unassigned in the demo prefab, so it draws the raw rigidbody: VISUAL vs SIM stays 0 and every correction is visible.
 
@@ -84,15 +88,16 @@ Some projects add extra rows after these. They're listed per library below.
 | TICK GAP | * | * | * | * |
 | CLOCK ADJUST | ~ tick rate drift | * | ~ tick rate drift | ✓ |
 | LATENCY RTT | ✓ | ✓ | ✓ | ✓ |
+| INPUT RTT | ✓ | n/a | * | * |
 | TICK LEAD | ✓ | * | * | ✓ |
 | SNAPSHOT AGE | * | * | * | * |
-| SERVER INPUT BUFFER | ✓ (server) | ~ commands/frame (server) | ~ packets/tick (server) | ~ input slack (client) |
+| SERVER INPUT BUFFER | ✓ (server) | ~ commands/frame (server) | * (server) | ~ input slack (client) |
 | PACKET LOSS | ✓ | ✗ | ~ tick gaps (est.) | ✓ (%) |
 | NET IN | ✓ | ✓ | ✓ | ✓ |
-| NET OUT | ✓ | ✓ | ✗ | ✓ |
+| NET OUT | ✓ | ✓ | * (needs CountingTugboat) | ✓ |
 | VISUAL JUMP | ✓ | * | * | * |
 | VISUAL vs SIM | ✓ | * | * | * |
-| Extra rows | FREEZE / RESET, RESIM SKIPPED | RTT JITTER | — | RTT JITTER, LEAD JUMP / PAUSE, VIEW STARVED |
+| Extra rows | FREEZE / RESET, RESIM SKIPPED, RTT JITTER | RTT JITTER | — | RTT JITTER, LEAD JUMP / PAUSE, VIEW STARVED |
 
 ---
 
@@ -104,16 +109,17 @@ Ursitoare runs on Mirror for transport. Its own API exposes almost everything An
 
 | Graph | Source |
 |---|---|
-| RESIM | `PredictionManager.onTickStat`, `TickStat.didResimulate` |
-| RESIM DEPTH | `TickStat.resimTicks` |
-| RESIM COST | `TickStat.resimDuration` |
+| RESIM | `PredictionManager.resimulation` (true when a resimulation starts, false when it ends). `TickStat.didResimulate` is not used: the client resimulates before `base.Tick()` resets it, so it is always false. |
+| RESIM DEPTH | `totalRewindDistance` delta at the resimulation start. |
+| RESIM COST * | Wall time between the `resimulation` start and end events. |
 | RESIM ENTITIES * | Client entities whose public `resimTicks` counter advanced this frame. Ursitoare replays every registered client entity. |
 | PREDICTION ERROR * | Local entity's `localStateBuffer` vs `serverStateBuffer` at the newest server tick. Read by a player-loop hook at the start of the fixed step, before `PredictionManager.Tick()` checks for and runs the resimulation. |
 | CORRECTION * | Local rigidbody pose in that hook vs in `onPreTick`, which fires after the resim or snap. |
 | TICK COST | `TickStat.duration`. Ursitoare already excludes the resimulation from it. |
 | TICK GAP * | Time between `onPreTick` events. |
 | CLOCK ADJUST ~ **TICK RATE DRIFT** | Ursitoare ticks at a fixed rate from `FixedUpdate` and never adjusts its clock. Shown instead: the tick rate actually achieved over 2 s vs `1/fixedDeltaTime`. |
-| LATENCY RTT | `ClientPredictionManager.onTickRttDuration` (per-tick RTT) |
+| LATENCY RTT | Mirror `NetworkTime.rtt` (Ursitoare runs on Mirror; the same ping the Mirror demo graphs), drawn when it updates |
+| INPUT RTT | `ClientPredictionManager.onTickRttDuration`: the client tick echoed back with the server state of the input it applied. Commit `5117080` stamps the tick one tick early, so it reads about one tick high (see `Ursitoare-library-issues.md` #13) |
 | TICK LEAD | `ClientPredictedEntity.GetServerDelay()` of the local entity |
 | SNAPSHOT AGE * | Time since `onTickRttDuration` last fired. It fires whenever a newer server state arrives. |
 | SERVER INPUT BUFFER | Server only: largest `ServerPredictedEntity.BufferFill()` |
@@ -123,6 +129,7 @@ Ursitoare runs on Mirror for transport. Its own API exposes almost everything An
 | VISUAL vs SIM | `PredictedEntityVisuals.GetInterpolationDistance()` |
 | **FREEZE / RESET** (extra) | `PredictionManager.onSnapToServer`: history ran out and everything snapped to the latest server state |
 | **RESIM SKIPPED** (extra) | Deltas of `totalResimulationsSkipped` (oversimulation protection) and `resimSkipNotEnoughHistory` |
+| **RTT JITTER** (extra) | √ Mirror `NetworkTime.rttVariance`: the same ping statistics as LATENCY RTT, and the same row the Mirror demo has |
 
 ### Not available
 
@@ -192,6 +199,7 @@ Ursitoare runs on Mirror for transport. Its own API exposes almost everything An
 ### Not available
 
 - Resim depth, prediction error and packet loss: as in the table above.
+- **Input round trip.** The demo sends input as a `[Command]` with no tick, and the server applies it as soon as it arrives. `PredictedRigidbody` state carries no reference to an input, so an input can't be matched to the state that applied it. LATENCY RTT is the closest measure.
 - Exact correction events. `PredictedRigidbody` has `OnCorrected`, `OnSnappedIntoPlace`, `OnBeforeApplyState`, `OnBeginPrediction` and `OnEndPrediction`, but they are `protected virtual`. Using them means subclassing `PredictedRigidbody` and swapping it into the prefabs, which is outside "public API only". With them, the pose-diff detection could be replaced by real events.
 
 ### Everything Mirror exposes publicly for this
@@ -223,23 +231,24 @@ FishNet has public events around every reconcile and replay. That makes the resi
 | TICK GAP * | Time between `OnPreTick` events |
 | CLOCK ADJUST ~ **TICK RATE DRIFT** | FishNet does speed up and slow down the client tick, but `_adjustedTickDelta` is private. Shown instead: achieved tick rate vs `TimeManager.TickRate` over 2 s, which captures that adjustment. |
 | LATENCY RTT | `TimeManager.OnRoundTripTimeUpdated` |
+| INPUT RTT * | `TimeManager.OnPostTick` stamps `LocalTick` (its replicate is queued to send). `PredictionManager.OnPreReconcile(clientTick, …)` times it: the server sends each state with the last replicate tick it ran for that client. Read at reconcile, up to a tick after arrival, and throttled reconciles are not seen |
 | TICK LEAD * | `TimeManager.LocalTick` − the client tick of the latest reconcile |
 | SNAPSHOT AGE * | Time since `TimeManager.LastPacketTick.LastRemoteTick` advanced, checked on each `Transport.OnClientReceivedData` |
-| SERVER INPUT BUFFER ~ **PACKETS IN / TICK** | The replicate queue is internal to `NetworkBehaviour`. Shown instead (server only): transport packets received per server tick. |
+| SERVER INPUT BUFFER * | Server only, sampled after each server tick: the largest `NetworkConnection.PacketTick.RemoteTick − ReplicateTick.RemoteTick` across remote clients. That's the newest client tick received minus the client tick of the input the server last ran, i.e. inputs received but not yet simulated, the same meaning as Ursitoare's `BufferFill()`. `ReplicateTick` only advances for created replicates. FishNet stops resending unchanged input, so a client whose `ReplicateTick` hasn't moved for more than `GetMaximumServerReplicates()` server ticks counts as 0 rather than a growing false backlog. The queue itself is internal to `NetworkBehaviour`. |
 | PACKET LOSS ~ **TICK GAPS (est.)** | No loss counter. Shown instead: server ticks skipped between consecutive packets. The server sends every tick while predicted objects move, so a gap usually means a lost or merged packet. |
 | NET IN | `Transport.OnClientReceivedData` / `OnServerReceivedData` |
-| NET OUT | **n/a.** There's no public outgoing data event. The outbound counters in `NetworkTrafficStatistics` (the Network Profiler window) are internal and marked "for internal use". |
+| NET OUT * | `CountingTugboat.OnDataSent`: the segments FishNet passes to `SendToServer` / `SendToClient`, as payload bytes without LiteNetLib/UDP headers. That's the same basis as NET IN (`OnClientReceivedData` / `OnServerReceivedData`). Inactive until `CountingTugboat` replaces the stock `Tugboat` on the NetworkManager (see "Wiring it up"). FishNet itself has no public way to read outgoing bytes: see "Not available". |
 | VISUAL JUMP * | Ursitoare's jump test applied to `NetworkObject.GetGraphicalObject()` |
 | VISUAL vs SIM * | Graphical object vs rigidbody: the tick smoother's offset |
 
 ### Not available
 
-- Outgoing bandwidth.
+- **Outgoing bandwidth, from FishNet itself.** `NetworkTrafficStatistics.OnNetworkTraffic` is public, but the byte totals it carries (`BidirectionalNetworkTraffic.OutboundTraffic`) are `internal`. Tugboat's LiteNetLib `NetManager`, which counts sent bytes when `EnableStatistics` is on, is `internal` too. NET OUT therefore comes from the `CountingTugboat` subclass instead.
 - The real clock adjustment value.
-- The server replicate queue depth.
-- A real packet loss counter.
+- The server replicate queue itself. Its depth is derived from the public per-connection ticks instead (see SERVER INPUT BUFFER).
+- A real packet loss counter. `Transport.GetPacketLoss(bool)` is public and Tugboat implements it, but it reads LiteNetLib statistics that only count when `NetManager.EnableStatistics` is on. Tugboat never enables it, and the `NetManager` is `internal`, so it always returns 0 here. Don't wire it.
 
-All four exist inside FishNet but are `internal` or `private`. The substitutes above cover the clock adjustment, the replicate queue and packet loss.
+These exist inside FishNet but are `internal` or `private`. The substitutes above cover the clock adjustment and packet loss. The computed SERVER INPUT BUFFER covers the replicate queue, and `CountingTugboat` covers outgoing bandwidth.
 
 ### Everything FishNet exposes publicly for this
 
@@ -255,8 +264,10 @@ All four exist inside FishNet but are `internal` or `private`. The substitutes a
   - Settings: `StateInterpolation`, `StateOrder`, `GetMaximumServerReplicates()`.
 - **Transport:** `OnClientReceivedData`, `OnServerReceivedData`, connection state events. `LatencySimulator` exposes its configured latency, loss and out-of-order settings, not measurements.
 - **NetworkObject:** `EnablePrediction`, `GetGraphicalObject()`, `PredictionManager`.
+- **NetworkConnection** (server side, via `ServerManager.Clients`): `PacketTick` (newest client tick received), `ReplicateTick` (client tick of the last replicate the server ran), `LocalTick`, `IsLocalClient`. Each is an `EstimatedTick` with `RemoteTick`, `LastRemoteTick`, `LocalTick` and `IsUnset`.
 - **Inside your own `[Replicate]` method:** `ReplicateState` (created, replayed, future, …).
-- **StatisticsManager / NetworkTrafficStatistics.OnNetworkTraffic:** fires per tick when enabled in the inspector, but the byte counts in its arguments are internal.
+- **StatisticsManager / NetworkTrafficStatistics.OnNetworkTraffic:** fires per tick when enabled in the inspector (it's disabled by default), but the byte counts in its arguments are `internal`, and FishNet marks the event "for internal use and may change".
+- **Tugboat:** `public class`, not sealed, with `public override` `SendToServer` and `SendToClient`. Subclassing it is how `CountingTugboat` observes outgoing data. `GetPacketLoss(bool)` is public, but its `NetManager` and statistics are not.
 
 ---
 
@@ -278,6 +289,7 @@ PurrDiction exposes the most diagnostics of the four, including its own clock pa
 | TICK GAP * | Time between `NetworkManager.onPreTick` events |
 | CLOCK ADJUST | `(PredictionManager.currentTickPacingScale − 1) × 100`. This is PurrDiction's input-slack controller, clamped to ±2%. |
 | LATENCY RTT | `TickManager.rtt` |
+| INPUT RTT * | The forward (non-replay) physics pass stamps `localTickInContext`. Timed when the local player's `PredictedIdentity.lastVerifiedTick` reaches that tick. PurrDiction uses one shared tick timeline, so the verified frame for tick T contains the server's simulation of the client's input for T. Read when the frame is applied, not on packet arrival |
 | TICK LEAD | `PredictionManager.localTick` − the local player's `PredictedIdentity.lastVerifiedTick` |
 | SNAPSHOT AGE * | Time since `PredictionManager.framesReceivedTotal` advanced |
 | SERVER INPUT BUFFER ~ **INPUT SLACK** | The server's input queue is private, but the server echoes `lastInputSlackMs` back: how early the newest input arrived before it was needed. Shown in ticks on the client; late inputs are clamped to 0. |

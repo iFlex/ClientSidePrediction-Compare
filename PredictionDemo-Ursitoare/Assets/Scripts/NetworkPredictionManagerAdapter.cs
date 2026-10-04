@@ -5,6 +5,7 @@ using UnityEngine;
 using Prediction;
 using Prediction.Components.Controllers;
 using Prediction.Data;
+using Prediction.Interpolation;
 using Prediction.Resimulation.Detection;
 
 namespace DefaultNamespace
@@ -59,8 +60,7 @@ namespace DefaultNamespace
             Debug.Log($"[NetworkPredictionManagerAdapter][Setup] isServer:{isServer} isClient:{isClient}");
             Debug.Log($"[NetworkPredictionManagerAdapter] AppPath:{Application.dataPath}");
             Debug.Log($"[NetworkPredictionManagerAdapter] PdPath:{Application.persistentDataPath}");
-            PredictionManager.DEBUG = true;
-            
+
             instance = this;
             latencySimulation = GameObject.FindAnyObjectByType<LatencySimulation>();
             if (!isServer)
@@ -169,6 +169,17 @@ namespace DefaultNamespace
             PredictionManager.RESIMULATE_PRECISE_FOLLOWERS_SQR_DISTANCE_THRESHOLD = Mathf.Pow(config.precise_resim_followers_distance_treshold, 2);
             PredictionManager.FOLLOWER_INSTANCE_RESIM_CHECKER = new SimpleConfigurableResimulationDecider(
                 config.follower_dist_tres, config.follower_rot_tres, config.follower_velo_tres, config.follower_avelo_tres);
+
+            //LOGGING
+            //NOTE: PosAnalyser (every visual frame), LATE_ADD and TIME_PAST_END_OF_BFR in the interpolators log without a flag and can't be turned off here.
+            PredictionManager.DEBUG = config.library_logging;
+            PredictionManager.DEBUG_OWNERSHIP = config.library_logging;
+            ClientPredictedEntity.LOG_ADDED_SERVER_STATES = config.library_logging;
+            ClientPredictedEntity.LOG_RESIMULATION_STEPS = config.library_logging;
+            MovingAverageInterpolator.DEBUG = config.library_logging;
+            MovingAverageInterpolator.LOG_POS = config.library_logging;
+            Adapters.Prediction.CustomVisualInterpolator.DEBUG = config.library_logging;
+            Adapters.Prediction.CustomVisualInterpolator.LOG_POS = config.library_logging;
 
             Debug.Log($"[NetworkPredictionManagerAdapter][ApplyConfig] sim:{config.SimulationHz}Hz render:{config.RenderingHz}Hz net:{config.NetworkHz}Hz buffer:{config.server_buffer_size} catchupSections:{config.server_catchup_sections} resimChecker:{PredictionManager.SNAPSHOT_INSTANCE_RESIM_CHECKER} predict_followers:{PredictionManager.PREDICT_FOLLOWERS}");
         }

@@ -103,6 +103,7 @@ GameObject:
   - component: {fileID: 4502829533418071610}
   - component: {fileID: 5179673924510843960}
   - component: {fileID: 5193004937162397310}
+  - component: {fileID: 7291836450192837465}
   m_Layer: 0
   m_Name: NonControllableBall
   m_TagString: Untagged
@@ -216,6 +217,22 @@ MonoBehaviour:
   _floatAccuracy: 1
   _eventMask: 63
   _ignoreTriggerOnTrigger: 0
+--- !u!114 &7291836450192837465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 102630359568949666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be7140b1c8a5450d842b33934c5f3853, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 283d506f12f746058aa0bfdd371db75d, type: 2}
+  rigidbody: {fileID: 4502829533418071610}
+  colliders:
+  - {fileID: 197297251626949386}
 --- !u!1 &3226207620630852779
 GameObject:
   m_ObjectHideFlags: 0

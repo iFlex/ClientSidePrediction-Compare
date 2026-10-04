@@ -106,6 +106,7 @@ GameObject:
   - component: {fileID: 7550580265309285545}
   - component: {fileID: 5481791723726042179}
   - component: {fileID: 5600336994664884820}
+  - component: {fileID: 6182390471625034811}
   m_Layer: 0
   m_Name: PredictedPlayer
   m_TagString: Untagged
@@ -210,7 +211,7 @@ MonoBehaviour:
   MaxTravelSpeed: 15
   MaxBoostTravelSpeed: 30
   RotationPower: 10
-  BoostRotationPower: 30
+  SpinRotationPower: 30
   ThrottlePower: 10
   BoostPower: 50
   rigidbody: {fileID: 4442928602634557679}
@@ -219,6 +220,7 @@ MonoBehaviour:
   boost: 0
   strafeLeft: 0
   strafeRight: 0
+  spin: 0
 --- !u!114 &5481791723726042179
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -259,6 +261,22 @@ MonoBehaviour:
   currentTimeStep: 0
   targetTime: 0
   artifficialDelay: 1
+--- !u!114 &6182390471625034811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3044378196897846977}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be7140b1c8a5450d842b33934c5f3853, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: e592c8aac8a94d4c85718ba031e974f4, type: 2}
+  rigidbody: {fileID: 4442928602634557679}
+  colliders:
+  - {fileID: 3775917178177729721}
 --- !u!1 &7048142618327758589
 GameObject:
   m_ObjectHideFlags: 0

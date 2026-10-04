@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 989
   m_ShowMode: 4
-  m_Title: Inspector
+  m_Title: Project
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 300}
   m_MaxSize: {x: 10000, y: 10000}
@@ -1766,14 +1766,15 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: []
+      m_SelectedIDs:
+      - m_Data: 48210
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -5738
-      - m_Data: -5366
-      - m_Data: -4308
-      - m_Data: -1294
+      - m_Data: -9224
+      - m_Data: -8852
+      - m_Data: -7788
+      - m_Data: -1382
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -2008,14 +2009,14 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs:
-    - m_Data: 50622
+    - m_Data: 50388
     m_LastClickedID:
-      m_Data: 50622
+      m_Data: 50388
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 49680
-    - m_Data: 49682
-    - m_Data: 49684
+    - m_Data: 50018
+    - m_Data: 50020
+    - m_Data: 50022
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2048,9 +2049,9 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 49680
-    - m_Data: 49682
-    - m_Data: 49684
+    - m_Data: 50018
+    - m_Data: 50020
+    - m_Data: 50022
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2077,8 +2078,9 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: []
-    m_LastClickedInstanceID: 0
+    m_SelectedInstanceIDs:
+    - m_Data: 48210
+    m_LastClickedInstanceID: 48210
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 765740
@@ -2103,8 +2105,8 @@ MonoBehaviour:
     - m_Data: 93010
     m_RenameOverlay:
       m_UserAcceptedRename: 0
-      m_Name: 
-      m_OriginalName: 
+      m_Name: PredictedPlayer
+      m_OriginalName: PredictedPlayer
       m_EditFieldRect:
         serializedVersion: 2
         x: 0
@@ -2112,10 +2114,10 @@ MonoBehaviour:
         width: 0
         height: 0
       m_UserData:
-        m_Data: 0
+        m_Data: 48202
       m_IsWaitingForDelay: 0
       m_IsRenaming: 0
-      m_OriginalEventType: 11
+      m_OriginalEventType: 0
       m_IsRenamingFilename: 1
       m_TrimLeadingAndTrailingWhitespace: 0
       m_ClientGUIView: {fileID: 9}
