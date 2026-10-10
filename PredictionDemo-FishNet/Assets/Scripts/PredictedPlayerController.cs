@@ -5,34 +5,40 @@ using FishNet.Transporting;
 using FishNet.Utility.Template;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class PredictedPlayerController : TickNetworkBehaviour
 {
     private readonly SyncVar<Color> color = new SyncVar<Color>();
-    [SerializeField] private bool LimitSpeed = true;
-    [SerializeField] private float MaxTravelSpeed = 15f;
-    [SerializeField] private float MaxBoostTravelSpeed = 30f;
+    
+    [Tooltip("Shared movement tuning from the common package, the same asset every demo uses.")]
+    [SerializeField] private PlayerMovementConfig movementConfig;
+    [Tooltip("Used instead of movementConfig when this object is a bot.")]
+    [SerializeField] private PlayerMovementConfig botMovementConfig;
     
     [SerializeField] private Renderer _renderer;
     [SerializeField] private GameObject _playerPrefab;
-    
-    [SerializeField] private float RotationPower = 10;
-    [FormerlySerializedAs("BoostRotationPower")] [SerializeField] private float SpinRotationPower = 30;
-    [SerializeField] private float ThrottlePower = 10;
-    [SerializeField] private float BoostPower = 50;
-    
     
     // PredictionRigidbody is set within OnStart/StopNetwork to use our
     // caching system. You could simply initialize a new instance in the field
     // but for increased performance using the cache is demonstrated.
     public PredictionRigidbody PredictionRigidbody;
+    // Reconciled with the rigidbody (PlayerReconcileData), so replays restart from the flip state of the reconciled tick.
+    private PlayerFlipState flipState;
+    
+    [SerializeField] private Camera localCamera;
+    private LocalCameraSwitch cameraSwitch;
+
+    // Bots are the player prefab spawned without an owner. Owner is replicated, so clients replaying a bot pick the same config.
+    private RandomBotBrain botBrain;
+    bool IsBot => !Owner.IsValid;
+    PlayerMovementConfig Config => IsBot && botMovementConfig ? botMovementConfig : movementConfig;
     
     private void Awake()
     {
         PredictionRigidbody = ResettableObjectCaches<PredictionRigidbody>.Retrieve();
         PredictionRigidbody.Initialize(GetComponent<Rigidbody>());
         color.OnChange += OnColorChanged;
+        cameraSwitch = new LocalCameraSwitch(localCamera);
     }
     
     private void OnDestroy()
@@ -50,68 +56,40 @@ public class PredictedPlayerController : TickNetworkBehaviour
         }
     }
     
-    
-    float ReadKeyboardThrottle()
-    {
-        float up = UnityEngine.InputSystem.Keyboard.current.upArrowKey.isPressed ? 1 : 0;
-        float down = UnityEngine.InputSystem.Keyboard.current.downArrowKey.isPressed ? 1 : 0;
-        return -down + up;
-    }
-
-    float ReadKeyboardRotate()
-    {
-        float left = UnityEngine.InputSystem.Keyboard.current.leftArrowKey.isPressed ? 1 : 0;
-        float right = UnityEngine.InputSystem.Keyboard.current.rightArrowKey.isPressed ? 1 : 0;
-        return -left + right;
-    }
-
-    bool ReadKeyboardBoost()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.spaceKey.isPressed;
-    }
-
-    bool ReadKeyboardStrafeLeft()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.qKey.isPressed;
-    }
-
-    bool ReadKeyboardStrafeRight()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
-    }
-
-    bool ReadKeyboardSpin()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.leftShiftKey.isPressed;
-    }
-    
     private void Update()
     {
         if (!base.IsOwner)
             return;
-
-        //REMARK: why do we even need to do this? can't we just read them directly in CreateReplicateData?
-        //throttle = ReadKeyboardThrottle();
-        //steer = ReadKeyboardRotate();
-        //boost = ReadKeyboardBoost();
+        
+        cameraSwitch.Update();
     }
     
     private PlayerReplicateData CreateReplicateData()
     {
+        // The server is the controller of bots and reads their RandomBotBrain.
+        if (IsServerInitialized && IsBot)
+            return CreateBotReplicateData();
+
         if (!base.IsOwner)
             return default;
 
         // Build the replicate data with all inputs which affect the prediction.
-        // REMARK: why aer you reading the input data again here?
-        //float horizontal = Input.GetAxisRaw("Horizontal");
-        //float vertical = Input.GetAxisRaw("Vertical");
-        PlayerReplicateData md = new PlayerReplicateData(ReadKeyboardBoost(), ReadKeyboardThrottle(), ReadKeyboardRotate(), ReadKeyboardStrafeLeft(), ReadKeyboardStrafeRight(), ReadKeyboardSpin());
-        // REMARK: why are you forcing jump to false now?
-        //_jump = false;
-
-        return md;
+        return new PlayerReplicateData(DemoInput.ReadMovement());
     }
     
+    private PlayerReplicateData CreateBotReplicateData()
+    {
+        if (!botBrain)
+        {
+            botBrain = GetComponent<RandomBotBrain>();
+            if (!botBrain)
+            {
+                botBrain = gameObject.AddComponent<RandomBotBrain>();
+            }
+        }
+        return new PlayerReplicateData(botBrain.GetInput());
+    }
+
     protected override void TimeManager_OnTick()
     {
         RunInputs(CreateReplicateData());
@@ -134,29 +112,18 @@ public class PredictedPlayerController : TickNetworkBehaviour
         // and never on the rigidbody itself; this includes if also accessing from
         // another script.
 
-        Vector3 torqueVector = Vector3.zero;
-        if (Mathf.Abs(0 - Mathf.Abs(data.steer)) > 0.05f)
+        PlayerMovementInput input = data.ToMovementInput();
+        // Read the body before adding this tick's forces: the flip decides from the state the tick starts in.
+        Config.ComputeFlip(input, PredictionRigidbody.Rigidbody.rotation, PredictionRigidbody.Rigidbody.angularVelocity, ref flipState,
+            out Vector3 jumpVelocity, out Vector3 flipTorque);
+        if (jumpVelocity != Vector3.zero)
+            PredictionRigidbody.AddForce(jumpVelocity, ForceMode.VelocityChange);
+        PredictionRigidbody.AddTorque(flipTorque, ForceMode.Acceleration);
+
+        PredictionRigidbody.AddRelativeTorque(Config.ComputeTorque(input));
+        if (Config.CanAccelerate(PredictionRigidbody.Rigidbody.linearVelocity.magnitude, input.boost))
         {
-            torqueVector = (data.spin ? SpinRotationPower : RotationPower) * data.steer * Vector3.up;
-        }
-        Vector3 throttleVector = Vector3.zero;
-        if (Mathf.Abs(0 - Mathf.Abs(data.throttle)) > 0.05f)
-        {
-            throttleVector = Vector3.forward * ( data.boost ? Mathf.Sign(data.throttle) * BoostPower : ThrottlePower * data.throttle);
-        }
-        if (data.strafeLeft)
-        {
-            throttleVector += Vector3.left * BoostPower;
-        }
-        if (data.strafeRight)
-        {
-            throttleVector += Vector3.right * BoostPower;
-        }
-        
-        PredictionRigidbody.AddRelativeTorque(torqueVector);
-        if (!LimitSpeed || PredictionRigidbody.Rigidbody.linearVelocity.magnitude < GetMaxSpeed(data.boost))
-        {
-            PredictionRigidbody.AddRelativeForce(throttleVector);
+            PredictionRigidbody.AddRelativeForce(Config.ComputeForce(input));
         }
         
         // Simulate the added forces.
@@ -173,7 +140,7 @@ public class PredictedPlayerController : TickNetworkBehaviour
         // PredictionRigidbody field in the reconcile data is an easy
         // way to accomplish this. More advanced states may require other
         // values to be sent; this will be covered later on.
-        PlayerReconcileData rd = new PlayerReconcileData(PredictionRigidbody);
+        PlayerReconcileData rd = new PlayerReconcileData(PredictionRigidbody, flipState);
         // Like with the replicate you could specify a channel here, though
         // it's unlikely you ever would with a reconcile.
         ReconcileState(rd);
@@ -185,15 +152,11 @@ public class PredictedPlayerController : TickNetworkBehaviour
         // Call reconcile on your PredictionRigidbody field passing in
         // values from data.
         PredictionRigidbody.Reconcile(data.PredictionRigidbody);
+        flipState = data.FlipState;
     }
 
     void OnColorChanged(Color prev, Color next, bool asServer)
     {
         _renderer.material.color = next;
-    }
-    
-    float GetMaxSpeed(bool boosting)
-    {
-        return boosting ? MaxBoostTravelSpeed : MaxTravelSpeed;
     }
 }

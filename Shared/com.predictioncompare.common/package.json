@@ -1,0 +1,11 @@
+{
+  "name": "com.predictioncompare.common",
+  "version": "1.0.0",
+  "displayName": "Prediction Compare Common",
+  "description": "Code shared by all four PredictionDemo projects: bots, physics body configs, the ResimGraph overlay core and the visual fidelity probe. Nothing here may depend on a networking library.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.inputsystem": "1.18.0",
+    "com.unity.ugui": "2.0.0"
+  }
+}

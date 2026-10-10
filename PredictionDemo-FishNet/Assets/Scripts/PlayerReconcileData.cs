@@ -1,4 +1,4 @@
-﻿using FishNet.Object.Prediction;
+using FishNet.Object.Prediction;
 
 namespace DefaultNamespace
 {
@@ -10,11 +10,18 @@ namespace DefaultNamespace
         // transform properties, pending velocities and more are automatically
         // handled with PredictionRigidbody.
         public PredictionRigidbody PredictionRigidbody;
-    
-        public PlayerReconcileData(PredictionRigidbody pr) : this()
+        // Flip progress is gameplay state outside the rigidbody, so it must be reconciled alongside it.
+        public int FlipActiveTicks;
+        public int FlipCooldownTicks;
+
+        public PlayerReconcileData(PredictionRigidbody pr, PlayerFlipState flipState) : this()
         {
             PredictionRigidbody = pr;
+            FlipActiveTicks = flipState.activeTicks;
+            FlipCooldownTicks = flipState.cooldownTicks;
         }
+
+        public PlayerFlipState FlipState => new PlayerFlipState(FlipActiveTicks, FlipCooldownTicks);
 
         private uint _tick;
         public void Dispose() { }

@@ -28,7 +28,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6303727814696266125}
@@ -102,7 +102,7 @@ GameObject:
   - component: {fileID: 197297251626949386}
   - component: {fileID: 4502829533418071610}
   - component: {fileID: 8217522655442524453}
-  - component: {fileID: 5500898590274515377}
+  - component: {fileID: 7129237519915270623}
   - component: {fileID: 5814290320337558380}
   - component: {fileID: 7291836450192837465}
   m_Layer: 0
@@ -121,7 +121,7 @@ Transform:
   m_GameObject: {fileID: 102630359568949666}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -147,7 +147,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Radius: 1.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &4502829533418071610
 Rigidbody:
@@ -193,7 +193,7 @@ MonoBehaviour:
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
---- !u!114 &5500898590274515377
+--- !u!114 &7129237519915270623
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -202,13 +202,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 102630359568949666}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d96a3590f70d4840ab3d2caf040bbf28, type: 3}
+  m_Script: {fileID: 11500000, guid: 968fa1c8015b45d1b8af6f2449c286a9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DefaultNamespace.PredictedNetworkBehaviour
+  m_EditorClassIdentifier: sector0.ursitoare-mirror::Sector0.UrsitoareMirror.PredictedNonControllableBehaviour
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  renderer: {fileID: 0}
   predictionComponents: []
   _rigidbody: {fileID: 4502829533418071610}
   bufferSize: 50

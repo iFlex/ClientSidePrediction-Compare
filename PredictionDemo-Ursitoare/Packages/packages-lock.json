@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.predictioncompare.common": {
+      "version": "file:../../Shared/com.predictioncompare.common",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.inputsystem": "1.18.0",
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.9",
       "depth": 0,
@@ -208,13 +217,21 @@
       "hash": "1502014bad8eb1391dd15a2ea7e59ff36a506b10"
     },
     "sector0.ursitoare": {
-      "version": "https://github.com/iFlex/Ursitoare.git",
+      "version": "file:C:/Development/Ursitoare",
       "depth": 0,
-      "source": "git",
+      "source": "local",
       "dependencies": {
         "sector0.safe-event-dispatcher": "1.0.0"
-      },
-      "hash": "5117080f1dd81acd217c2e470b5e947435712478"
+      }
+    },
+    "sector0.ursitoare-mirror": {
+      "version": "file:C:/Development/Ursitoare-Mirror",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "sector0.safe-event-dispatcher": "1.0.0",
+        "sector0.ursitoare": "1.0.0"
+      }
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

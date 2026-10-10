@@ -1,0 +1,10 @@
+PurrNet - seems the be the most inefficient. Taking the longest per tick and per resimulation.
+- it also is the most jittery. Observable stutters are visible during collision especially.
+TODO: check if the stutters can be smoothed out with interpolation config.
+- No syncVar support for predicted identity... 
+
+FishNet - seems to work well.
+- it seems to have quite a bit of visual overlap during collisions at high speed even with low interpolation delays.
+TODO: play with the configs some more.
+- it has a lot more visual overlap than Ursitoare does.
+

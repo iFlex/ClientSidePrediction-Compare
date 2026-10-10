@@ -1,36 +1,39 @@
+using DefaultNamespace;
 using Mirror;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class MirrorPredictedPlayerController : NetworkBehaviour
 {
     [SyncVar(hook = nameof(OnColorUpdated))]
     private Color color;
-    [SerializeField] private bool LimitSpeed = true;
-    [SerializeField] private float MaxTravelSpeed = 15f;
-    [SerializeField] private float MaxBoostTravelSpeed = 30f;
+
+    [Tooltip("Shared movement tuning from the common package, the same asset every demo uses.")]
+    [SerializeField] private PlayerMovementConfig movementConfig;
+    [Tooltip("Used instead of movementConfig when this object is a bot.")]
+    [SerializeField] private PlayerMovementConfig botMovementConfig;
 
     [SerializeField] private Renderer renderer;
     [SerializeField] private PredictedRigidbody predictedRigidbody;
     [SerializeField] private Rigidbody rigidbody;
     
-    [SerializeField] private float RotationPower = 1;
-    [FormerlySerializedAs("BoostRotationPower")] [SerializeField] private float SpinRotationPower = 30;
-    [SerializeField] private float ThrottlePower = 1;
-    [SerializeField] private float BoostPower = 5;
-    
-    [SerializeField] float rotate;
-    [SerializeField] float throttle;
-    [SerializeField] bool boost;
-    [SerializeField] bool strafeLeft;
-    [SerializeField] bool strafeRight;
-    [SerializeField] bool spin;
+    [SerializeField] private PlayerMovementInput input;
+    [SerializeField] private PlayerFlipState flipState;
     [SerializeField] private bool groundTest = false;
     [SerializeField] private GameObject ground;
     
-    [SerializeField] private Vector3 torqueVector;
-    [SerializeField] private Vector3 throttleVector;
+    [SerializeField] private Camera localCamera;
+    private LocalCameraSwitch cameraSwitch;
 
+    // Bots are the player prefab spawned without an owner; the server drives them from a RandomBotBrain.
+    private RandomBotBrain botBrain;
+    bool IsBot => isServer && connectionToClient == null;
+    PlayerMovementConfig Config => IsBot && botMovementConfig ? botMovementConfig : movementConfig;
+    
+    private void Awake()
+    {
+        cameraSwitch = new LocalCameraSwitch(localCamera);
+    }
+    
     private void Start()
     {
         if (isServer)
@@ -38,129 +41,85 @@ public class MirrorPredictedPlayerController : NetworkBehaviour
             color = new Color(Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f));
             OnColorUpdated(Color.white, color);
         }
+
+        if (IsBot)
+        {
+            botBrain = GetComponent<RandomBotBrain>();
+            if (!botBrain)
+            {
+                botBrain = gameObject.AddComponent<RandomBotBrain>();
+            }
+        }
+    }
+    
+    void Update()
+    {
+        if (!isLocalPlayer)
+            return;
+            
+        cameraSwitch.Update();
     }
 
     //TODO: pick colors for playables :D
-    float ReadKeyboardThrottle()
-    {
-        float up = UnityEngine.InputSystem.Keyboard.current.upArrowKey.isPressed ? 1 : 0;
-        float down = UnityEngine.InputSystem.Keyboard.current.downArrowKey.isPressed ? 1 : 0;
-        return -down + up;
-    }
-
-    float ReadKeyboardRotate()
-    {
-        float left = UnityEngine.InputSystem.Keyboard.current.leftArrowKey.isPressed ? 1 : 0;
-        float right = UnityEngine.InputSystem.Keyboard.current.rightArrowKey.isPressed ? 1 : 0;
-        return -left + right;
-    }
-
-    bool ReadKeyboardBoost()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.spaceKey.isPressed;
-    }
-
-    bool ReadKeyboardStrafeLeft()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.qKey.isPressed;
-    }
-
-    bool ReadKeyboardStrafeRight()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.eKey.isPressed;
-    }
-
-    bool ReadKeyboardSpin()
-    {
-        return UnityEngine.InputSystem.Keyboard.current.leftShiftKey.isPressed;
-    }
     
     private void FixedUpdate()
     {
         if (!isServer && isLocalPlayer)
         {
-            rotate = ReadKeyboardRotate();
-            throttle = ReadKeyboardThrottle();
-            boost = ReadKeyboardBoost();
-            strafeLeft = ReadKeyboardStrafeLeft();
-            strafeRight = ReadKeyboardStrafeRight();
-            spin = ReadKeyboardSpin();
-
-            ComputeForces();
-            predictedRigidbody.predictedRigidbody.AddRelativeTorque(torqueVector);
-            if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
+            input = DemoInput.ReadMovement();
+            ApplyFlip(predictedRigidbody.predictedRigidbody);
+            
+            predictedRigidbody.predictedRigidbody.AddRelativeTorque(Config.ComputeTorque(input));
+            if (Config.CanAccelerate(rigidbody.linearVelocity.magnitude, input.boost))
             {
-                predictedRigidbody.predictedRigidbody.AddRelativeForce(throttleVector);
+                predictedRigidbody.predictedRigidbody.AddRelativeForce(Config.ComputeForce(input));
             }
-            CmdApplyServerForce(rotate, throttle, boost, strafeLeft, strafeRight, spin);
+            CmdApplyServerForce(input.throttle, input.steer, input.boost, input.strafeLeft, input.strafeRight, input.spin, input.flip);
         }
-
+        
         //TODO: a better host mode check?
         if (isServer && isClient && isLocalPlayer)
         {
-            rotate = ReadKeyboardRotate();
-            throttle = ReadKeyboardThrottle();
-            boost = ReadKeyboardBoost();
-            strafeLeft = ReadKeyboardStrafeLeft();
-            strafeRight = ReadKeyboardStrafeRight();
-            spin = ReadKeyboardSpin();
-            LocalApplyForces(rotate, throttle, boost, strafeLeft, strafeRight, spin);
+            LocalApplyForces(DemoInput.ReadMovement());
+        }
+
+        if (IsBot && botBrain)
+        {
+            LocalApplyForces(botBrain.GetInput());
         }
     }
     
-    void ComputeForces()
-    {
-        torqueVector = Vector3.zero;
-        if (Mathf.Abs(rotate) > 0.05f)
-        {
-            torqueVector = Vector3.up * (spin ? SpinRotationPower : RotationPower) * rotate;
-        }
-        throttleVector = Vector3.zero;
-        if (Mathf.Abs(throttle) > 0.05f)
-        {
-            throttleVector = Vector3.forward * ( boost ? Mathf.Sign(throttle) * BoostPower : ThrottlePower * throttle);
-        }
-        if (strafeLeft)
-        {
-            throttleVector += Vector3.left * BoostPower;
-        }
-        if (strafeRight)
-        {
-            throttleVector += Vector3.right * BoostPower;
-        }
-    }
-
     [Command]
-    void CmdApplyServerForce(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight, bool cspin)
+    void CmdApplyServerForce(float cthrottle, float csteer, bool cboost, bool cstrafeLeft, bool cstrafeRight, bool cspin, bool cflip)
     {
-        LocalApplyForces(crotate, cthrottle, cboost, cstrafeLeft, cstrafeRight, cspin);
+        LocalApplyForces(new PlayerMovementInput(cthrottle, csteer, cboost, cstrafeLeft, cstrafeRight, cspin, cflip));
     }
 
-    void LocalApplyForces(float crotate, float cthrottle, bool cboost, bool cstrafeLeft, bool cstrafeRight, bool cspin)
+    void LocalApplyForces(PlayerMovementInput applied)
     {
-        rotate = crotate;
-        throttle = cthrottle;
-        boost = cboost;
-        strafeLeft = cstrafeLeft;
-        strafeRight = cstrafeRight;
-        spin = cspin;
-        ComputeForces();
+        input = applied;
+        ApplyFlip(rigidbody);
         
-        rigidbody.AddRelativeTorque(torqueVector);
-        if (!LimitSpeed || rigidbody.linearVelocity.magnitude < GetMaxSpeed(boost))
+        rigidbody.AddRelativeTorque(Config.ComputeTorque(input));
+        if (Config.CanAccelerate(rigidbody.linearVelocity.magnitude, input.boost))
         {
-            rigidbody.AddRelativeForce(throttleVector);
+            rigidbody.AddRelativeForce(Config.ComputeForce(input));
         }
+    }
+    
+    // Mirror has no rollback: the owning client and the server each run the flip on their own body with their own flip state,
+    // and the server's PredictedRigidbody state corrects the client. The server steps it once per received command.
+    void ApplyFlip(Rigidbody body)
+    {
+        Config.ComputeFlip(input, body.rotation, body.angularVelocity, ref flipState, out Vector3 jumpVelocity, out Vector3 flipTorque);
+        if (jumpVelocity != Vector3.zero)
+            body.AddForce(jumpVelocity, ForceMode.VelocityChange);
+        body.AddTorque(flipTorque, ForceMode.Acceleration);
     }
     
     void OnColorUpdated(Color oldC, Color newC)
     {
         renderer.material.color = newC;
-    }
-    
-    float GetMaxSpeed(bool boosting) 
-    {
-        return boosting ? MaxBoostTravelSpeed : MaxTravelSpeed;
     }
     
     //TODO: ground test

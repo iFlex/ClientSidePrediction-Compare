@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.predictioncompare.common": {
+      "version": "file:../../Shared/com.predictioncompare.common",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.inputsystem": "1.18.0",
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.9",
       "depth": 0,

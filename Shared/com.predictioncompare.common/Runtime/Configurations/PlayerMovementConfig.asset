@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 877caa111e744c90894b93d4314b3a46, type: 3}
+  m_Name: PlayerMovementConfig
+  m_EditorClassIdentifier: 
+  LimitSpeed: 1
+  MaxTravelSpeed: 15
+  MaxBoostTravelSpeed: 30
+  RotationPower: 12
+  SpinRotationPower: 12
+  ThrottlePower: 25
+  BoostPower: 66
+  DeadZone: 0.05
+  FlipJumpVelocity: 6
+  FlipTorque: 15
+  FlipDamping: 8
+  FlipStartBelowDot: 0.5
+  FlipUprightDot: 0.98
+  FlipMaxTicks: 240
+  FlipCooldownTicks: 120

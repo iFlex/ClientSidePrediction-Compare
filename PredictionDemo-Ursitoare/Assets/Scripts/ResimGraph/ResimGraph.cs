@@ -6,9 +6,9 @@
 using System;
 using System.Collections.Generic;
 using Mirror;
-using Prediction;
-using Prediction.Components.Controllers;
-using Prediction.Data;
+using Sector0.Ursitoare;
+using Sector0.Ursitoare.Components;
+using Sector0.Ursitoare.Data;
 using UnityEngine;
 
 namespace PredictionDebug
@@ -106,10 +106,11 @@ namespace PredictionDebug
 
             pm.onPreTick.AddEventListener(OnPreTick);
             pm.onTickStat.AddEventListener(OnTickStat);
-            pm.resimulation.AddEventListener(OnResimulation);
-            pm.onSnapToServer.AddEventListener(OnSnapToServer);
+            
             if (_client != null)
             {
+                _client.resimulation.AddEventListener(OnResimulation);
+                _client.onSnapToServer.AddEventListener(OnSnapToServer);
                 _client.onTickRttDuration.AddEventListener(OnTickRtt);
                 _client.onPacketLoss.AddEventListener(OnPacketLoss);
             }
@@ -145,13 +146,13 @@ namespace PredictionDebug
             {
                 _pm.onPreTick.RemoveEventListener(OnPreTick);
                 _pm.onTickStat.RemoveEventListener(OnTickStat);
-                _pm.resimulation.RemoveEventListener(OnResimulation);
-                _pm.onSnapToServer.RemoveEventListener(OnSnapToServer);
             }
             if (_client != null)
             {
                 _client.onTickRttDuration.RemoveEventListener(OnTickRtt);
                 _client.onPacketLoss.RemoveEventListener(OnPacketLoss);
+                _client.resimulation.RemoveEventListener(OnResimulation);
+                _client.onSnapToServer.RemoveEventListener(OnSnapToServer);
             }
             PredictedEntityVisuals.onLargeTransformJumpGlobal.RemoveEventListener(OnLargeTransformJump);
 
@@ -270,7 +271,7 @@ namespace PredictionDebug
             _resimStart = -1.0;
         }
 
-        void OnTickRtt(PredictionManager.TickRttDuration rtt)
+        void OnTickRtt(ClientPredictionManager.TickRttDuration rtt)
         {
             InputRtt.Max((float)(rtt.duration * 1000.0));
             _lastStateArrival = Time.unscaledTime;

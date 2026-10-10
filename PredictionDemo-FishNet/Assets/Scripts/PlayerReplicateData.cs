@@ -1,4 +1,4 @@
-﻿using FishNet.Object.Prediction;
+using FishNet.Object.Prediction;
 
 namespace DefaultNamespace
 {
@@ -10,8 +10,9 @@ namespace DefaultNamespace
         public bool strafeLeft;
         public bool strafeRight;
         public bool spin;
+        public bool flip;
 
-        public PlayerReplicateData(bool boost, float throttle, float steer, bool strafeLeft, bool strafeRight, bool spin) : this()
+        public PlayerReplicateData(bool boost, float throttle, float steer, bool strafeLeft, bool strafeRight, bool spin, bool flip) : this()
         {
             this.boost = boost;
             this.throttle = throttle;
@@ -19,6 +20,14 @@ namespace DefaultNamespace
             this.strafeLeft = strafeLeft;
             this.strafeRight = strafeRight;
             this.spin = spin;
+            this.flip = flip;
+        }
+
+        public PlayerReplicateData(PlayerMovementInput input) : this(input.boost, input.throttle, input.steer, input.strafeLeft, input.strafeRight, input.spin, input.flip) { }
+
+        public PlayerMovementInput ToMovementInput()
+        {
+            return new PlayerMovementInput(throttle, steer, boost, strafeLeft, strafeRight, spin, flip);
         }
 
         private uint _tick;

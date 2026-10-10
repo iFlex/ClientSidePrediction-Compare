@@ -193,6 +193,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1441850373}
+    - targetCorrespondingSourceObject: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1441850375}
   m_SourcePrefab: {fileID: 100100000, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
 --- !u!114 &890742907 stripped
 MonoBehaviour:
@@ -302,6 +305,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3212754318203962304, guid: 1293cd16a7a12fb4f99695cfb51e18db, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: efe26027cacc84b409062a6cff9b90c4, type: 2}
     - target: {fileID: 6393393003633352787, guid: 1293cd16a7a12fb4f99695cfb51e18db, type: 3}
       propertyPath: m_Name
       value: Setup
@@ -354,6 +361,19 @@ MonoBehaviour:
   _stateOrder: 1
   _dropExcessiveReplicates: 1
   _maximumServerReplicates: 15
+--- !u!114 &1441850375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441850368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d36cd7f98fdfad14c8e3a68c7791b656, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  networkManager: {fileID: 890742907}
 --- !u!1 &1888984360
 GameObject:
   m_ObjectHideFlags: 0
@@ -460,6 +480,13 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 1888984362}
   _networkObjectCache: {fileID: 0}
   ballPrefab: {fileID: 102630359568949666, guid: 575c49158e2a4c44b9aedc99916816fc, type: 3}
+  botPrefab: {fileID: 3044378196897846977, guid: f11db547f6fb89640b1fff4cbcce1d90, type: 3}
+  botGrid:
+    botCount: 1
+    gridSpacing: 3
+    centerGrid: 1
+    center: {x: 0, y: 0, z: 0}
+    configFileName: runtime_config.txt
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

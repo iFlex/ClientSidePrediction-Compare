@@ -232,6 +232,7 @@ GameObject:
   - component: {fileID: 1615054615}
   - component: {fileID: 1615054617}
   - component: {fileID: 1615054616}
+  - component: {fileID: 1615054618}
   m_Layer: 0
   m_Name: NetworkPredictionManager
   m_TagString: Untagged
@@ -269,15 +270,10 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  hasClientPredManager: 0
-  hasServerPredManager: 0
   latencySimulation: {fileID: 0}
-  useUpdateLoop: 0
-  useGameTime: 0
-  InvalidConnectionId: -1
-  ServerConnectionId: 0
+  predictionManager: {fileID: 1615054618}
   config:
-    SimulationHz: 60
+    SimulationHz: 120
     RenderingHz: 120
     NetworkHz: 60
     vSync: 1
@@ -304,6 +300,7 @@ MonoBehaviour:
     follower_rot_tres: 0.201
     follower_velo_tres: 0.201
     follower_avelo_tres: 0.201
+    library_logging: 0
 --- !u!114 &1615054617
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -321,6 +318,27 @@ MonoBehaviour:
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
+--- !u!114 &1615054618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1615054614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e8a7d84045060f48a5bc80a21a9c140, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: sector0.ursitoare-mirror::Sector0.UrsitoareMirror.NetworkPredictionManagerAdapter
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  hasClientPredManager: 0
+  hasServerPredManager: 0
+  useUpdateLoop: 0
+  useGameTime: 0
+  InvalidConnectionId: -1
+  ServerConnectionId: 0
 --- !u!1 &2006447251
 GameObject:
   m_ObjectHideFlags: 0
@@ -353,8 +371,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1565224836}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0.2, y: 0.1}
+  m_AnchorMin: {x: 0.8, y: 0}
+  m_AnchorMax: {x: 1, y: 0.1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -467,6 +485,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2022817522}
+  - component: {fileID: 2022817524}
   - component: {fileID: 2022817523}
   m_Layer: 0
   m_Name: GameController
@@ -484,7 +503,7 @@ Transform:
   m_GameObject: {fileID: 2022817521}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -19.5, y: 9.6828, z: 5.97817}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -502,7 +521,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75bcc514327bcf548861ca8dc743a3bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameController
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   ballPrefab: {fileID: 102630359568949666, guid: 575c49158e2a4c44b9aedc99916816fc, type: 3}
+  botPrefab: {fileID: 3044378196897846977, guid: 47f6943e2cda0af479da6184f95eb315, type: 3}
+  botGrid:
+    botCount: 1
+    gridSpacing: 3
+    centerGrid: 1
+    center: {x: 0, y: 0, z: 0}
+    configFileName: runtime_config.txt
+--- !u!114 &2022817524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2022817521}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
+  sceneId: 1787700633
+  _assetId: 0
+  serverOnly: 1
+  visibility: 0
+  hasSpawned: 0
 --- !u!1 &2114847163
 GameObject:
   m_ObjectHideFlags: 0
@@ -582,6 +628,8 @@ MonoBehaviour:
   playerSpawnMethod: 1
   spawnPrefabs:
   - {fileID: 102630359568949666, guid: 575c49158e2a4c44b9aedc99916816fc, type: 3}
+  - {fileID: 3044378196897846977, guid: 47f6943e2cda0af479da6184f95eb315, type: 3}
+  - {fileID: 3044378196897846977, guid: f11db547f6fb89640b1fff4cbcce1d90, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2

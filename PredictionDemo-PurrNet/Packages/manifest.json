@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.predictioncompare.common": "file:../../Shared/com.predictioncompare.common",
     "com.unity.ai.navigation": "2.0.9",
     "com.unity.collab-proxy": "2.11.3",
     "com.unity.collections": "2.6.8",

@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: PlayerPhysicsConfig
   m_EditorClassIdentifier: 
   mass: 1
-  linearDamping: 0
-  angularDamping: 0.05
+  linearDamping: 0.1
+  angularDamping: 0.1
   useGravity: 1
-  dynamicFriction: 0.01
-  staticFriction: 0.02
-  bounciness: 0
+  dynamicFriction: 0.001
+  staticFriction: 0.001
+  bounciness: 0.0001
   frictionCombine: 0
   bounceCombine: 0

@@ -18,11 +18,11 @@ To place it yourself, for example to change its settings in the inspector, add t
 - **FishNet only:** NET OUT needs the `CountingTugboat` transport, which isn't in the scene yet. Until it is, the row shows `(needs CountingTugboat transport, see ResimGraph.md)`. To turn it on, add the `CountingTugboat` component to the NetworkManager GameObject in the Gameplay scene. FishNet's `TransportManager` picks up the transport already on that object and only adds a stock `Tugboat` at runtime when there's none. `CountingTugboat` is a `Tugboat` subclass that reports each segment it's asked to send and otherwise behaves exactly like `Tugboat`.
 - **PurrNet only:** jitter, packet loss and bandwidth come from PurrNet's `StatisticsManager`, and the Gameplay scene doesn't have one. The graph adds one to the NetworkManager GameObject at startup. You can turn this off with *Add Statistics Manager If Missing*. It sends about 20 small ping packets a second, which show up in NET OUT.
 
-Files, the same in every project:
+Files:
 
 | File | What it is |
 |---|---|
-| `Assets/Scripts/ResimGraph/ResimGraphCore.cs` | Shared drawing and layout code. Byte-identical in all four projects. |
+| `Shared/com.predictioncompare.common/Runtime/ResimGraph/ResimGraphCore.cs` | Shared drawing and layout code. Lives once in the shared local package that all four projects reference from `Packages/manifest.json`. |
 | `Assets/Scripts/ResimGraph/ResimGraph.cs` | Library-specific collector. This is the component you add. |
 | `Assets/Scripts/ResimGraph/CountingTugboat.cs` | FishNet only. A `Tugboat` subclass that reports outgoing bytes for NET OUT. Not wired into the scene yet; see the FishNet note above. |
 
@@ -40,7 +40,7 @@ Files, the same in every project:
 
 ## The graphs
 
-These 18 rows appear in every project, in this order.
+These 22 rows appear in every project, in this order.
 
 | Graph | Unit | What it measures |
 |---|---|---|
@@ -62,6 +62,12 @@ These 18 rows appear in every project, in this order.
 | NET IN / NET OUT | KB/s | Bytes received and sent, over a sliding 1 s window. |
 | VISUAL JUMP | event | The rendered transform moved more than 0.35 m or 2.5° in one frame. |
 | VISUAL vs SIM | m | Distance between the rendered object and the simulated rigidbody. This is how much the smoothing is hiding. |
+| VISUAL vs SERVER | m | Local player: the rendered object vs the server's position at the same moment, delay included (raw). From the visual fidelity probe. Height is the position error, colour the worse of position and rotation. |
+| VISUAL vs SERVER resid | m | Local player: the rendered object vs the server at the moment the library says the visual shows (residual). Height is the position error, colour the worse of position and rotation. |
+| OTHERS vs SERVER resid | m | The worst residual among remote players, bots and balls in each frame. Height and colour as above. |
+| VISUAL DELAY | ms | Local player: the visual delay the library reports to the probe. Grid line = one tick. |
+
+The last four rows come from the visual fidelity probes (`VisualFidelity.md`), not from the library collector, and need that library's feeder; without one they show `(no visual fidelity feeder running)`. A frame's error is only known once the server state for it arrives, about a round trip later. The three error rows therefore draw each value in the column of the frame it describes, so they line up with CORRECTION and VISUAL JUMP, and their newest stretch, roughly one round trip wide, fills in late.
 
 Some projects add extra rows after these. They're listed per library below.
 
@@ -97,6 +103,9 @@ Some projects add extra rows after these. They're listed per library below.
 | NET OUT | ✓ | ✓ | * (needs CountingTugboat) | ✓ |
 | VISUAL JUMP | ✓ | * | * | * |
 | VISUAL vs SIM | ✓ | * | * | * |
+| VISUAL vs SERVER | * (feeder) | ✗ no public server state | * (feeder) | * (feeder) |
+| VISUAL vs SERVER resid, OTHERS vs SERVER resid | * (feeder) | ✗ no public server state | ✗ delay private; * with the reflection toggle (F10) | * (feeder) |
+| VISUAL DELAY | * `GetVisualDelay()` | ✗ no public server state | ✗ private; * with the reflection toggle (F10) | * tick fraction |
 | Extra rows | FREEZE / RESET, RESIM SKIPPED, RTT JITTER | RTT JITTER | — | RTT JITTER, LEAD JUMP / PAUSE, VIEW STARVED |
 
 ---
